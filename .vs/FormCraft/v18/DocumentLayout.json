@@ -1,0 +1,419 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\source\\repos\\FormCraft\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{DE15024B-BF9D-4D15-A205-AACF6A8EE670}|FormCraft.ForMudBlazor\\FormCraft.ForMudBlazor.csproj|d:\\source\\repos\\formcraft\\formcraft.formudblazor\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{DE15024B-BF9D-4D15-A205-AACF6A8EE670}|FormCraft.ForMudBlazor\\FormCraft.ForMudBlazor.csproj|solutionrelative:formcraft.formudblazor\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DE15024B-BF9D-4D15-A205-AACF6A8EE670}|FormCraft.ForMudBlazor\\FormCraft.ForMudBlazor.csproj|d:\\source\\repos\\formcraft\\formcraft.formudblazor\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownPreview",
+      "RelativeMoniker": "D:0:0:{DE15024B-BF9D-4D15-A205-AACF6A8EE670}|FormCraft.ForMudBlazor\\FormCraft.ForMudBlazor.csproj|solutionrelative:formcraft.formudblazor\\readme.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}|MarkdownPreview"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|d:\\source\\repos\\formcraft\\formcraft.demoblazorapp\\helpers\\guidelinehelpers.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|solutionrelative:formcraft.demoblazorapp\\helpers\\guidelinehelpers.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|d:\\source\\repos\\formcraft\\formcraft.demoblazorapp\\models\\orderformmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|solutionrelative:formcraft.demoblazorapp\\models\\orderformmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|d:\\source\\repos\\formcraft\\formcraft.demoblazorapp\\services\\demodocumentationvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|solutionrelative:formcraft.demoblazorapp\\services\\demodocumentationvalidator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|d:\\source\\repos\\formcraft\\formcraft.demoblazorapp\\services\\demoregistry.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|solutionrelative:formcraft.demoblazorapp\\services\\demoregistry.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|d:\\source\\repos\\formcraft\\formcraft.demoblazorapp\\models\\demometadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|solutionrelative:formcraft.demoblazorapp\\models\\demometadata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|d:\\source\\repos\\formcraft\\formcraft.demoblazorapp\\models\\jobapplicationmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0E605901-5186-4D76-AC90-EC845675DB9C}|FormCraft.DemoBlazorApp\\FormCraft.DemoBlazorApp.csproj|solutionrelative:formcraft.demoblazorapp\\models\\jobapplicationmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 210,
+          "SelectedChildIndex": 66,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{51d8ca1e-4698-404c-a37b-a4a41603557b}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{904d9a5a-bbb5-47da-9531-d910e81fa928}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{e506b91c-c606-466a-90a9-123d1d1e12b3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{387cb18d-6153-4156-9257-9ac3f9207bbe}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{46c87f81-5a06-43a8-9e25-85d33bac49f8}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:2:0:{34c7837f-3b3a-449c-bdf0-bdad86cbaf4a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{dcc4ea97-1c0c-482b-b205-e541c0df9728}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{4a9b7e51-aa16-11d0-a8c5-00a0c921a4d2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:132:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:133:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:3:0:{34c7837f-3b3a-449c-bdf0-bdad86cbaf4a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:153:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:154:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:152:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:151:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:150:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:148:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:149:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:136:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:144:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:147:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:145:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:146:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:143:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:142:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:141:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:140:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:139:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:138:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:137:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:135:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:134:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{13b12e3e-c1b4-4539-9371-4fe9a0d523fc}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:130:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:133:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:134:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:2:0:{fabf9319-47eb-497e-b8f6-d9f73fba5f55}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:3:0:{fabf9319-47eb-497e-b8f6-d9f73fba5f55}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:6:0:{fabf9319-47eb-497e-b8f6-d9f73fba5f55}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:7:0:{fabf9319-47eb-497e-b8f6-d9f73fba5f55}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:579190456:0:{bf84ea66-d821-4dba-b1b1-2777d8574775}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{e8b06f52-6d01-11d2-aa7d-00c04f990343}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:131:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{a80febb4-e7e0-4147-b476-21aaf2453969}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:130:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{004be353-6879-467c-9d1e-9ac23cdf6d49}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{57d563b6-44a5-47df-85be-f4199ad6b651}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{37aba9be-445a-11d3-9949-00c04f68fd0a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{004be353-6879-467c-9d1e-9ac23cdf6d49}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "JobApplicationModel.cs",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Models\\JobApplicationModel.cs",
+              "RelativeDocumentMoniker": "FormCraft.DemoBlazorApp\\Models\\JobApplicationModel.cs",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Models\\JobApplicationModel.cs",
+              "RelativeToolTip": "FormCraft.DemoBlazorApp\\Models\\JobApplicationModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-08T22:40:20.097Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "DemoMetadata.cs",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Models\\DemoMetadata.cs",
+              "RelativeDocumentMoniker": "FormCraft.DemoBlazorApp\\Models\\DemoMetadata.cs",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Models\\DemoMetadata.cs",
+              "RelativeToolTip": "FormCraft.DemoBlazorApp\\Models\\DemoMetadata.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAcwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-08T22:40:38.531Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "DemoRegistry.cs",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Services\\DemoRegistry.cs",
+              "RelativeDocumentMoniker": "FormCraft.DemoBlazorApp\\Services\\DemoRegistry.cs",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Services\\DemoRegistry.cs",
+              "RelativeToolTip": "FormCraft.DemoBlazorApp\\Services\\DemoRegistry.cs",
+              "ViewState": "AgIAAHYAAAAAAAAAAAAgwG4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-08T22:40:47.496Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "DemoDocumentationValidator.cs",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Services\\DemoDocumentationValidator.cs",
+              "RelativeDocumentMoniker": "FormCraft.DemoBlazorApp\\Services\\DemoDocumentationValidator.cs",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Services\\DemoDocumentationValidator.cs",
+              "RelativeToolTip": "FormCraft.DemoBlazorApp\\Services\\DemoDocumentationValidator.cs",
+              "ViewState": "AgIAAHMAAAAAAAAAAAAcwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-08T22:41:13.948Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "OrderFormModel.cs",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Models\\OrderFormModel.cs",
+              "RelativeDocumentMoniker": "FormCraft.DemoBlazorApp\\Models\\OrderFormModel.cs",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Models\\OrderFormModel.cs",
+              "RelativeToolTip": "FormCraft.DemoBlazorApp\\Models\\OrderFormModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-08T22:41:29.39Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "GuidelineHelpers.cs",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Helpers\\GuidelineHelpers.cs",
+              "RelativeDocumentMoniker": "FormCraft.DemoBlazorApp\\Helpers\\GuidelineHelpers.cs",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.DemoBlazorApp\\Helpers\\GuidelineHelpers.cs",
+              "RelativeToolTip": "FormCraft.DemoBlazorApp\\Helpers\\GuidelineHelpers.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-08T22:41:37.37Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "README.md",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.ForMudBlazor\\README.md",
+              "RelativeDocumentMoniker": "FormCraft.ForMudBlazor\\README.md",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.ForMudBlazor\\README.md",
+              "RelativeToolTip": "FormCraft.ForMudBlazor\\README.md",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-03-09T03:35:14.067Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "README.md [Preview]",
+              "DocumentMoniker": "D:\\source\\repos\\FormCraft\\FormCraft.ForMudBlazor\\README.md",
+              "RelativeDocumentMoniker": "FormCraft.ForMudBlazor\\README.md",
+              "ToolTip": "D:\\source\\repos\\FormCraft\\FormCraft.ForMudBlazor\\README.md [Preview]",
+              "RelativeToolTip": "FormCraft.ForMudBlazor\\README.md [Preview]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
+              "WhenOpened": "2026-03-09T03:39:12.033Z",
+              "EditorCaption": " [Preview]"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 204,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{590a070c-4fcd-52d9-87da-dfaa11710261}"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 190,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{f4fc5ff1-28ef-4b04-ad02-6b298310ccc7}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
