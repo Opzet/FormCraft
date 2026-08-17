@@ -17,3 +17,16 @@ riderModule.iml
 /.vs/CopilotSnapshots/D340690A441AE848A756E4CBDF2182E0/0A6518171A021449926708E36EF14E73
 /.vs/CopilotSnapshots/D340690A441AE848A756E4CBDF2182E0
 /.vs/FormCraft/copilot-chat/2cf5cff1/sessions
+*.db
+/.vs/FormCraft/DesignTimeBuild/.dtbcache.v2
+*.v2
+*.suo
+/.vs/FormCraft/FileContentIndex/484c9a20-0d73-484d-ad7e-62ba2252bc64.vsidx
+/.vs/FormCraft/FileContentIndex/69861d78-8fac-46a7-8588-dc4b11abf995.vsidx
+/.vs/FormCraft/FileContentIndex/6d203f29-f31c-4e27-b06d-e82f310fd2c1.vsidx
+/.vs/FormCraft/v18/DocumentLayout.backup.json
+/.vs/FormCraft/v18/DocumentLayout.json
+/.vs/FormCraft/v18/fileList.bin
+/.vs/ProjectEvaluation/formcraft.metadata.v10.bin
+/.vs/ProjectEvaluation/formcraft.projects.v10.bin
+/.vs/ProjectEvaluation/formcraft.strings.v10.bin
