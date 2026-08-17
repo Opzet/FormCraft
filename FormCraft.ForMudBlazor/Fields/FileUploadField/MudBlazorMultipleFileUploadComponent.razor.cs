@@ -10,15 +10,28 @@ public partial class MudBlazorMultipleFileUploadComponent<TModel>
 
     private const string DefaultDragClass = "relative rounded-lg border-2 border-dashed pa-4 mud-width-full mud-height-full d-flex justify-center align-center";
 
+    /// <summary>
+    /// Variant applied to the Browse/Clear buttons. Honors the field-level "Variant"
+    /// attribute (set via .WithVariant(...)); defaults to Filled to preserve the
+    /// historical button styling. The form-level default variant targets input
+    /// fields and intentionally does not restyle these buttons.
+    /// </summary>
+    protected Variant ButtonVariant => GetAttribute<Variant?>("Variant") ?? Variant.Filled;
+
     public string? Accept { get; set; }
     public int MaxFiles { get; set; } = 10;
     public long? MaxFileSize { get; set; }
     public bool ShowPreview { get; set; } = true;
     public bool EnableDragDrop { get; set; } = true;
 
-    protected override void OnInitialized()
+    /// <inheritdoc />
+    /// <remarks>
+    /// Moved off <c>OnInitialized</c> so a component instance handed a different field re-reads it
+    /// rather than rendering the previous field's settings (#298).
+    /// </remarks>
+    protected override void OnFieldConfigurationChanged()
     {
-        base.OnInitialized();
+        base.OnFieldConfigurationChanged();
 
         // Get configuration from FileUploadConfiguration if available
         var config = GetAttribute<FileUploadConfiguration>("FileUploadConfiguration");
@@ -54,19 +67,38 @@ public partial class MudBlazorMultipleFileUploadComponent<TModel>
     private Task OpenFilePickerAsync()
         => _fileUpload?.OpenFilePickerAsync() ?? Task.CompletedTask;
 
-    private Task ClearAsync()
+    private async Task ClearAsync()
     {
         CurrentValue = new List<IBrowserFile>();
-        return _fileUpload?.ClearAsync() ?? Task.CompletedTask;
+
+        if (_fileUpload is not null)
+        {
+            await _fileUpload.ClearAsync();
+        }
+
+        // Clear All's own @if is now false, so the button the user activated has unmounted. Move
+        // focus deliberately or it falls to <body> (#281). Reuses the shared base member so this
+        // component and the single-file one cannot drift.
+        await FocusBrowseAsync();
     }
 
-    private void RemoveFile(IBrowserFile fileToRemove)
+    private async Task RemoveFile(IBrowserFile fileToRemove)
     {
         if (CurrentValue != null)
         {
             var fileList = CurrentValue.ToList();
             fileList.Remove(fileToRemove);
             CurrentValue = fileList;
+        }
+
+        // ONLY when that was the last file. The chip loop is keyless, so with files still left the
+        // diff *retains* the close button the user activated — it simply becomes the next file's —
+        // and focus was never lost. Moving it to Browse anyway would make removing three files mean
+        // tabbing back into the chip stack twice. It is the empty case that unmounts the whole chip
+        // stack and "Clear All" together, leaving Browse as the only survivor (#318).
+        if (CurrentValue?.Any() != true)
+        {
+            await FocusBrowseAsync();
         }
     }
 
@@ -77,7 +109,10 @@ public partial class MudBlazorMultipleFileUploadComponent<TModel>
 
     private static string FormatFileSize(long bytes)
     {
-        if (bytes == 0) return "0 Bytes";
+        if (bytes == 0)
+        {
+            return "0 Bytes";
+        }
 
         const int scale = 1024;
         string[] orders = { "GB", "MB", "KB", "Bytes" };
@@ -86,7 +121,9 @@ public partial class MudBlazorMultipleFileUploadComponent<TModel>
         foreach (string order in orders)
         {
             if (bytes > max)
+            {
                 return $"{decimal.Divide(bytes, max):##.##} {order}";
+            }
 
             max /= scale;
         }

@@ -60,7 +60,7 @@ public partial class SecurityDemo
             "CSRF tokens need to be validated on the server side",
             "Audit logs can become large - implement retention policies"
         ],
-        RelatedDemoIds = ["fluent", "validation", "async-value-provider"]
+        RelatedDemoIds = ["fluent", "fluent-validation-demo", "async-value-provider"]
     };
 
     // Legacy properties for backward compatibility with existing razor template
@@ -176,13 +176,21 @@ public partial class SecurityDemo
             // Reset form
             _model = new SecureUserModel();
 
-            // Simulate processing delay
-            await Task.Delay(1000);
+            // Simulate processing delay. The return value is deliberately ignored here: the finally
+            // below runs either way, so the disposal check has to live there rather than in an early
+            // return, which would skip nothing.
+            await DelayAsync(1000);
         }
         finally
         {
             _isSubmitting = false;
-            StateHasChanged();
+
+            // Guarded here, not above: a `finally` runs even when the try returns early, so this is
+            // the only place that actually protects the render.
+            if (!IsDisposed)
+            {
+                StateHasChanged();
+            }
         }
     }
 
@@ -230,7 +238,10 @@ public partial class SecurityDemo
 
     private List<FormSuccessDisplay.DataDisplayItem> GetDataDisplayItems()
     {
-        if (_lastSubmission == null) return new();
+        if (_lastSubmission == null)
+        {
+            return new();
+        }
 
         return new List<FormSuccessDisplay.DataDisplayItem>
         {

@@ -99,6 +99,23 @@ public static class FieldBuilderExtensions
         {
             return builder.WithAttribute("Options", options);
         }
+
+        /// <summary>
+        /// Sets the HTML <c>autocomplete</c> attribute emitted on the rendered input element,
+        /// helping browsers and password managers fill the field correctly (WCAG 2.1 - 1.3.5).
+        /// </summary>
+        /// <param name="value">An autocomplete token such as <c>"username"</c>, <c>"email"</c>, <c>"current-password"</c>, <c>"new-password"</c> or <c>"off"</c>.</param>
+        /// <returns>The FieldBuilder instance for method chaining.</returns>
+        /// <example>
+        /// <code>
+        /// .AddField(x => x.Password)
+        ///     .WithAutocomplete("current-password")
+        /// </code>
+        /// </example>
+        public FieldBuilder<TModel, TValue> WithAutocomplete(string value)
+        {
+            return builder.WithAttribute("autocomplete", value);
+        }
     }
 
     /// <param name="builder">The FieldBuilder instance for an IEnumerable field.</param>
@@ -126,7 +143,7 @@ public static class FieldBuilderExtensions
             return builder.WithAttribute("MultiSelectOptions", selectOptions);
         }
     }
-    
+
     /// <param name="builder">The FieldBuilder instance for a numeric field.</param>
     /// <typeparam name="TModel">The model type that the form binds to.</typeparam>
     /// <typeparam name="TValue">The numeric type of the field value.</typeparam>
@@ -167,6 +184,7 @@ public static class FieldBuilderExtensions
     {
         /// <summary>
         /// Adds email format validation to a string field (supports both nullable and non-nullable strings).
+        /// Null or empty values pass this validator; combine with <c>Required()</c> to make the field mandatory.
         /// </summary>
         /// <param name="errorMessage">Custom error message (default: "Please enter a valid email address").</param>
         /// <returns>The FieldBuilder instance for method chaining.</returns>
@@ -179,8 +197,67 @@ public static class FieldBuilderExtensions
         public FieldBuilder<TModel, TValue> WithEmailValidation(string? errorMessage = null)
         {
             return builder.WithValidator(
-                value => value == null || IsValidEmail(value?.ToString() ?? ""),
+                value => string.IsNullOrEmpty(value?.ToString()) || IsValidEmail(value.ToString()!),
                 errorMessage ?? "Please enter a valid email address");
+        }
+
+        /// <summary>
+        /// Overrides whether this field renders the UI framework's native required decoration — the
+        /// HTML5 <c>required</c> attribute, <c>aria-required</c>, and the framework's required
+        /// styling (the asterisk) on the rendered input. Pass <c>false</c> to suppress a decoration
+        /// that <c>.Required(...)</c> would otherwise produce.
+        /// </summary>
+        /// <param name="enabled">
+        /// <c>true</c> (default) to force the decoration on a field that never called
+        /// <c>.Required(...)</c>; <c>false</c> to suppress it on one that did. Either way the
+        /// explicit value wins over the inference — this method is an override, not merely an opt-in.
+        /// </param>
+        /// <returns>The FieldBuilder instance for method chaining.</returns>
+        /// <remarks>
+        /// <para>
+        /// ⚠️ <b>This changes no validation.</b> It is presentation only. <c>.Required("…")</c> is
+        /// what makes a field actually required — it registers a validator, and FormCraft's
+        /// validation is server-side with messages from the validator you configured. Passing
+        /// <c>false</c> here suppresses the decoration and leaves that validation entirely intact.
+        /// </para>
+        /// <para>
+        /// ⛔ <b>Think twice before passing <c>false</c> on a <c>.Required(...)</c> field.</b> Since
+        /// #199 a required field renders <c>aria-required="true"</c> so assistive technology
+        /// announces it; suppressing that puts <c>aria-required="false"</c> back on a genuinely
+        /// required input, which states the opposite of the truth to a screen reader and is a
+        /// WCAG 2.1 3.3.2 (Level A) failure. If the visible asterisk is what you want gone, restyle
+        /// the framework's required class instead. Legitimate uses of <c>false</c> are fields whose
+        /// requirement is conditional or communicated elsewhere.
+        /// </para>
+        /// <para>
+        /// Lives in core rather than in an adapter because the value it writes is read by every
+        /// adapter through <see cref="NativeRequired.Resolve"/>. It shipped in
+        /// <c>FormCraft.ForMudBlazor</c> in #204 and moved here in #279, once a second adapter had
+        /// to tell its users to type the raw <c>.WithAttribute("Required", …)</c> form instead. The
+        /// namespace is unchanged — <c>FormCraft</c> in both packages — so existing call sites
+        /// compile untouched.
+        /// </para>
+        /// <para>
+        /// Replaces the documented magic string <c>.WithAttribute("Required", true)</c> from #193,
+        /// which is undiscoverable and one typo away from silently doing nothing (#204). The raw
+        /// form still works and writes the same attribute — this is additive.
+        /// </para>
+        /// <para>
+        /// Forms render <c>novalidate</c> (#206), so the browser does not enforce the attribute on a
+        /// FormCraft form; what it buys is the semantics and the styling, not native validation
+        /// bubbles.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// .AddField(x => x.Email, field => field
+        ///     .Required("Email is required")   // the validation
+        ///     .WithNativeRequired())           // the decoration
+        /// </code>
+        /// </example>
+        public FieldBuilder<TModel, TValue> WithNativeRequired(bool enabled = true)
+        {
+            return builder.WithAttribute(NativeRequired.AttributeName, enabled);
         }
     }
 
@@ -292,8 +369,9 @@ public static class FieldBuilderExtensions
                 EnableDragDrop = enableDragDrop
             };
 
+            // No renderer override: the field type dispatches to the UI framework's
+            // file upload component, which reads this configuration attribute.
             builder.WithAttribute("FileUploadConfiguration", config);
-            builder.WithCustomRenderer(new FileUploadFieldRenderer());
 
             return builder;
         }
@@ -337,8 +415,9 @@ public static class FieldBuilderExtensions
                 EnableDragDrop = enableDragDrop
             };
 
+            // No renderer override: the field type dispatches to the UI framework's
+            // file upload component, which reads this configuration attribute.
             builder.WithAttribute("FileUploadConfiguration", config);
-            builder.WithCustomRenderer(new FileUploadFieldRenderer());
 
             return builder;
         }
@@ -378,7 +457,10 @@ public static class FieldBuilderExtensions
         builder.WithAttribute("AutocompleteDebounceMs", debounceMs);
         builder.WithAttribute("AutocompleteMinCharacters", minCharacters);
         if (toStringFunc != null)
+        {
             builder.WithAttribute("AutocompleteToStringFunc", toStringFunc);
+        }
+
         return builder;
     }
 
@@ -414,14 +496,19 @@ public static class FieldBuilderExtensions
         builder.WithAttribute("AutocompleteDebounceMs", debounceMs);
         builder.WithAttribute("AutocompleteMinCharacters", minCharacters);
         if (toStringFunc != null)
+        {
             builder.WithAttribute("AutocompleteToStringFunc", toStringFunc);
+        }
+
         return builder;
     }
 
     private static bool IsValidEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
+        {
             return false;
+        }
 
         try
         {

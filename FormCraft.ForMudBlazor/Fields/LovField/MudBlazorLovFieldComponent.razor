@@ -2,10 +2,14 @@
 @typeparam TModel
 @typeparam TValue
 @typeparam TItem
-@inherits FieldComponentBase<TModel, TValue>
+@inherits MudBlazorFieldComponentBase<TModel, TValue>
 @inject IDialogService DialogService
 @inject IServiceProvider ServiceProvider
 
+@* ShrinkLabel is passed for consistency with the other input components, but it cannot
+   change this field's rendering: the Placeholder below is never empty, and MudBlazor ORs
+   a non-empty placeholder into its own shrink decision. The label is therefore always
+   pinned here, whatever ShrinkLabel says. Pinned by ShrinkLabelRenderingTests. *@
 <MudTextField
     T="string"
     Label="@Label"
@@ -14,8 +18,10 @@
     HelperText="@HelpText"
     ReadOnly="true"
     Disabled="@IsDisabled"
-    Variant="Variant.Outlined"
+    Variant="@EffectiveVariant"
     Margin="Margin.Dense"
+    ShrinkLabel="@EffectiveShrinkLabel"
+    Required="@EffectiveNativeRequired"
     Adornment="Adornment.End"
     AdornmentIcon="@AdornmentIcon"
     AdornmentColor="Color.Primary"

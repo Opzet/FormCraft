@@ -52,8 +52,16 @@ public abstract class FieldComponentBase<TModel, TValue> : ComponentBase, IField
     protected virtual async Task NotifyValueChangedAsync(TValue? value)
     {
         await Context.OnValueChanged.InvokeAsync(value);
+        // The parent has now written the value to the model; record it so
+        // ShouldReloadValue can tell our own edits apart from external changes.
+        _lastNotifiedValue = value;
         StateHasChanged(); // Force re-render after value change
     }
+
+    /// <summary>
+    /// Tracks which field this instance's cached configuration was loaded from (#298, #335).
+    /// </summary>
+    private readonly FieldConfigurationTracker _fieldTracker = new();
 
     /// <inheritdoc />
     protected override void OnInitialized()
@@ -61,6 +69,10 @@ public abstract class FieldComponentBase<TModel, TValue> : ComponentBase, IField
         base.OnInitialized();
         LoadValueFromModel();
         _isInitialized = true;
+
+        // Before the derived component's own OnInitialized body runs — it calls base.OnInitialized()
+        // first, so its configuration is loaded by the time the rest of that body looks at it.
+        RefreshFieldConfigurationIfChanged();
     }
 
     /// <inheritdoc />
@@ -73,6 +85,55 @@ public abstract class FieldComponentBase<TModel, TValue> : ComponentBase, IField
         {
             LoadValueFromModel();
         }
+
+        // Blazor reuses a component instance whenever the render-tree shape matches, so this is the
+        // only place a component learns it has been handed a different field. Without it the instance
+        // renders the previous field's settings indefinitely — silently, with plausible-looking
+        // output (#298 for MudBlazor, #335 for Fluent UI).
+        RefreshFieldConfigurationIfChanged();
+    }
+
+    /// <summary>
+    /// Calls <see cref="OnFieldConfigurationChanged"/> when, and only when, the field changed.
+    /// </summary>
+    /// <remarks>
+    /// The guard — see <see cref="FieldConfigurationTracker"/> — is what makes this affordable:
+    /// <see cref="OnParametersSet"/> runs on every keystroke for an immediately-bound input, so the
+    /// alternative is re-reading every attribute per character typed.
+    /// </remarks>
+    private void RefreshFieldConfigurationIfChanged()
+    {
+        if (_fieldTracker.HasChanged(Context?.Field))
+        {
+            OnFieldConfigurationChanged();
+        }
+    }
+
+    /// <summary>
+    /// Reads everything this component caches from <c>Context.Field</c>. Called once per field.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Override this instead of loading configuration in <c>OnInitialized</c>. It runs on first render
+    /// and again whenever a different field arrives, so a component that puts all of its
+    /// <c>GetAttribute</c> calls here can never render a stale setting.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Assign every cached property on every call, including back to its default.</b> The
+    /// override is a reload, not a patch: a property left untouched because the new field does not
+    /// declare that attribute keeps the <i>previous</i> field's value, which is the same bug in a
+    /// smaller box. Watch for two shapes in particular, both of which shipped and had to be fixed —
+    /// <c>X = GetAttribute(…) ?? X</c>, which reads as "keep the default" and means "keep the previous
+    /// field's value" on a reload; and an assignment guarded by <c>if (value != null)</c>.
+    /// </para>
+    /// <para>
+    /// State <i>derived</i> from the configuration counts too — display text, a selected-items list, a
+    /// revealed-password flag — along with any per-instance diagnostic latch, since a new field
+    /// deserves its own verdict.
+    /// </para>
+    /// </remarks>
+    protected virtual void OnFieldConfigurationChanged()
+    {
     }
 
     /// <summary>
@@ -84,6 +145,9 @@ public abstract class FieldComponentBase<TModel, TValue> : ComponentBase, IField
         if (property != null && Context.Model != null)
         {
             var value = property.GetValue(Context.Model);
+            // Note: when TValue is a nullable value type (e.g. int?), a null model
+            // value falls through to default(TValue), which IS null - null is
+            // preserved rather than coerced to zero (#150).
             _currentValue = value is TValue typedValue ? typedValue : default;
             _lastNotifiedValue = _currentValue;
         }
@@ -100,15 +164,17 @@ public abstract class FieldComponentBase<TModel, TValue> : ComponentBase, IField
     /// </summary>
     private bool ShouldReloadValue()
     {
-        // If our current value matches what we last told the parent,
-        // we initiated this change - don't reload from model.
-        // This prevents race conditions where OnParametersSet fires during async operations.
-        if (EqualityComparer<TValue>.Default.Equals(_currentValue, _lastNotifiedValue))
+        // While a notification is in flight (we changed the value but the parent
+        // hasn't written it to the model yet), the model still holds the previous
+        // value - reloading now would wipe the user's input.
+        if (!EqualityComparer<TValue>.Default.Equals(_currentValue, _lastNotifiedValue))
         {
             return false;
         }
 
-        // External change - check if model differs from our current value
+        // Settled state: reload whenever the model diverged from what we display.
+        // This is how external mutations (dependency callbacks, programmatic
+        // model changes) reach the UI.
         var property = Context.Model?.GetType().GetProperty(Context.Field.FieldName);
         if (property != null && Context.Model != null)
         {

@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <RootNamespace>FormCraft.UnitTests</RootNamespace>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <NoWarn>$(NoWarn);BL0005;MUD0012</NoWarn>
@@ -16,11 +16,22 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      The version-tag publish rule, compiled into this assembly so VersionTagRuleTests can reach it
+      (#227). Linked source, NOT a ProjectReference to build/_build.csproj: that would pull Nuke and
+      its whole dependency graph into the library test assemblies. BuildVersioning.cs depends on
+      nothing but System.Text.RegularExpressions so that this stays a single-file link.
+    -->
+    <Compile Include="..\build\BuildVersioning.cs" Link="Ci\BuildVersioning.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="bunit" />
+    <PackageReference Include="AngleSharp" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

@@ -127,7 +127,11 @@ public partial class ImprovedForm
         _isSubmitting = true;
 
         // Simulate API call
-        await Task.Delay(2000);
+        if (!await DelayAsync(2000))
+        {
+            return;
+        }
+
 
         _isSubmitted = true;
         _isSubmitting = false;
@@ -152,7 +156,9 @@ public partial class ImprovedForm
         };
 
         if (!string.IsNullOrEmpty(_model.City))
+        {
             items.Add(new() { Label = "City", Value = _model.City });
+        }
 
         items.Add(new() { Label = "Newsletter", Value = _model.SubscribeToNewsletter ? "Yes" : "No" });
 

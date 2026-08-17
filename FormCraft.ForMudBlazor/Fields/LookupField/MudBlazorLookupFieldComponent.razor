@@ -1,7 +1,7 @@
 @namespace FormCraft.ForMudBlazor
 @typeparam TModel
 @typeparam TValue
-@inherits FieldComponentBase<TModel, TValue>
+@inherits MudBlazorFieldComponentBase<TModel, TValue>
 
 <MudTextField
     T="string"
@@ -11,9 +11,10 @@
     HelperText="@HelpText"
     ReadOnly="true"
     Disabled="@IsDisabled"
-    Variant="Variant.Outlined"
+    Variant="@EffectiveVariant"
     Margin="Margin.Dense"
-    ShrinkLabel="true"
+    ShrinkLabel="@EffectiveShrinkLabel"
+    Required="@EffectiveNativeRequired"
     Adornment="Adornment.End"
     AdornmentIcon="@Icons.Material.Filled.Search"
     OnAdornmentClick="@OpenLookupDialog"

@@ -115,7 +115,10 @@ public partial class FluentForm
         StateHasChanged();
 
         // Simulate API call
-        await Task.Delay(2000);
+        if (!await DelayAsync(2000))
+        {
+            return;
+        }
 
         _isSubmitted = true;
         _isSubmitting = false;
@@ -149,18 +152,26 @@ public partial class FluentForm
         };
 
         if (!string.IsNullOrEmpty(_model.City))
+        {
             items.Add(new() { Label = "City", Value = _model.City });
+        }
 
         if (_model.ExpectedSalary.HasValue)
+        {
             items.Add(new() { Label = "Expected Salary", Value = $"${_model.ExpectedSalary.Value:N2}" });
+        }
 
         if (_model.HourlyRate.HasValue)
+        {
             items.Add(new() { Label = "Hourly Rate", Value = $"${_model.HourlyRate.Value:N2}/hr" });
+        }
 
         items.Add(new() { Label = "Newsletter", Value = _model.SubscribeToNewsletter ? "Subscribed" : "Not Subscribed" });
 
         if (_fieldChanges.Any())
+        {
             items.Add(new() { Label = "Field Changes", Value = $"{_fieldChanges.Count} changes tracked" });
+        }
 
         return items;
     }

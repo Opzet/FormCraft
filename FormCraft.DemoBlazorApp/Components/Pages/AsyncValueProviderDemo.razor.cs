@@ -6,7 +6,9 @@ using MudBlazor;
 
 namespace FormCraft.DemoBlazorApp.Components.Pages;
 
-public partial class AsyncValueProviderDemo : ComponentBase
+// The base comes from @inherits DemoComponentBase in the .razor; restating ComponentBase here would
+// be a second, different base declaration for the same partial class (CS0263).
+public partial class AsyncValueProviderDemo
 {
     private AddressModel _model = new();
     private IFormConfiguration<AddressModel>? _formConfig;
@@ -23,6 +25,11 @@ public partial class AsyncValueProviderDemo : ComponentBase
     private int _cityCount;
 
     // Simulated data store
+    // Live lists bound to the State and City selects; repopulated by the async
+    // dependency callbacks below
+    private readonly List<SelectOption<string>> _stateOptions = [];
+    private readonly List<SelectOption<string>> _cityOptions = [];
+
     private static readonly Dictionary<string, List<string>> StatesByCountry = new()
     {
         ["United States"] = ["California", "New York", "Texas", "Florida", "Washington"],
@@ -97,7 +104,7 @@ public partial class AsyncValueProviderDemo : ComponentBase
             "Missing StateHasChanged() calls after async operations - UI may not update properly",
             "Not debouncing expensive async validators - can cause performance issues with frequent calls"
         ],
-        RelatedDemoIds = ["field-dependencies", "fluent", "cross-field-validation", "async-validation"]
+        RelatedDemoIds = ["complex-dependencies", "fluent", "cross-field-validation"]
     };
 
     // Legacy properties for backward compatibility with existing razor template
@@ -115,7 +122,11 @@ public partial class AsyncValueProviderDemo : ComponentBase
         new DemoDocumentationValidator().ValidateOrThrow(Documentation);
 
         // Simulate loading countries from API
-        await Task.Delay(800);
+        if (!await DelayAsync(800))
+        {
+            return;
+        }
+
         _countriesLoaded = true;
         StateHasChanged();
 
@@ -134,7 +145,8 @@ public partial class AsyncValueProviderDemo : ComponentBase
                 .Required("Please select a country"))
             .AddField(x => x.State, field => field
                 .WithLabel("State/Region")
-                .WithPlaceholder("Select a state or region")
+                .WithPlaceholder("Select a country first")
+                .WithAttribute("Options", _stateOptions)
                 .DependsOn(x => x.Country, async (model, country) =>
                 {
                     model.State = "";
@@ -142,16 +154,27 @@ public partial class AsyncValueProviderDemo : ComponentBase
                     _statesLoaded = false;
                     _citiesLoaded = false;
                     _cityCount = 0;
+                    _stateOptions.Clear();
+                    _cityOptions.Clear();
 
                     if (!string.IsNullOrEmpty(country))
                     {
                         _loadingStates = true;
                         StateHasChanged();
 
-                        // Simulate API call
-                        await Task.Delay(500);
+                        // Simulate API call. This lambda is held by the form configuration and closes
+                        // over the component, so it can outlive the page just as a handler can.
+                        if (!await DelayAsync(500))
+                        {
+                            return;
+                        }
 
-                        _stateCount = StatesByCountry.GetValueOrDefault(country)?.Count ?? 0;
+                        var states = StatesByCountry.GetValueOrDefault(country) ?? [];
+                        foreach (var state in states)
+                        {
+                            _stateOptions.Add(new SelectOption<string> { Value = state, Label = state });
+                        }
+                        _stateCount = states.Count;
                         _statesLoaded = true;
                         _loadingStates = false;
                         StateHasChanged();
@@ -160,11 +183,13 @@ public partial class AsyncValueProviderDemo : ComponentBase
                 .Required("Please select a state or region"))
             .AddField(x => x.City, field => field
                 .WithLabel("City")
-                .WithPlaceholder("Select a city")
+                .WithPlaceholder("Select a state first")
+                .WithAttribute("Options", _cityOptions)
                 .DependsOn(x => x.State, async (model, state) =>
                 {
                     model.City = "";
                     _citiesLoaded = false;
+                    _cityOptions.Clear();
 
                     if (!string.IsNullOrEmpty(state))
                     {
@@ -172,9 +197,17 @@ public partial class AsyncValueProviderDemo : ComponentBase
                         StateHasChanged();
 
                         // Simulate API call
-                        await Task.Delay(400);
+                        if (!await DelayAsync(400))
+                        {
+                            return;
+                        }
 
-                        _cityCount = CitiesByState.GetValueOrDefault(state)?.Count ?? 0;
+                        var cities = CitiesByState.GetValueOrDefault(state) ?? [];
+                        foreach (var city in cities)
+                        {
+                            _cityOptions.Add(new SelectOption<string> { Value = city, Label = city });
+                        }
+                        _cityCount = cities.Count;
                         _citiesLoaded = true;
                         _loadingCities = false;
                         StateHasChanged();
@@ -196,11 +229,17 @@ public partial class AsyncValueProviderDemo : ComponentBase
 
     private async Task<bool> ValidatePostalCodeAsync(string postalCode)
     {
-        // Simulate async validation against external service
+        // Simulate async validation against external service.
+        // ⛔ Deliberately a raw Task.Delay, not DelayAsync. This method renders nothing — it returns a
+        // validation verdict — so there is no disposed-component render to guard. Routing it through
+        // DelayAsync would force a bool return on the disposed path, and the only bools available here
+        // mean "valid" or "invalid": a torn-down page would start answering validation questions.
         await Task.Delay(300);
 
         if (string.IsNullOrEmpty(postalCode))
+        {
             return true;
+        }
 
         // Simple validation based on country
         return _model.Country switch
@@ -217,7 +256,10 @@ public partial class AsyncValueProviderDemo : ComponentBase
         _isSubmitting = true;
         StateHasChanged();
 
-        await Task.Delay(1500);
+        if (!await DelayAsync(1500))
+        {
+            return;
+        }
 
         _submitted = true;
         _isSubmitting = false;

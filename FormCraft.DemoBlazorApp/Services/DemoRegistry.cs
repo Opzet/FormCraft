@@ -108,6 +108,20 @@ public class DemoRegistry : IDemoRegistry
             Concepts = ["Layout", "Columns", "Grid Organization"],
             EstimatedMinutes = 5
         },
+        new()
+        {
+            Id = "auto-form",
+            Title = "Auto-Generated Forms",
+            Description = "Generate complete forms from any POCO with a single method call - no attributes required.",
+            Icon = Icons.Material.Filled.AutoAwesome,
+            Category = "form-examples",
+            Order = 19,
+            Level = Levels.Beginner,
+            LevelOrder = 7,
+            Prerequisites = ["attribute-based-forms"],
+            Concepts = ["Zero Configuration", "Reflection", "Data Annotations"],
+            EstimatedMinutes = 4
+        },
 
         // ===========================================
         // INTERMEDIATE LEVEL - "Building Better Forms" (7 demos)
@@ -286,6 +300,20 @@ public class DemoRegistry : IDemoRegistry
             Concepts = ["Encryption", "CSRF", "Rate Limiting", "Audit Logging"],
             EstimatedMinutes = 10
         },
+        new()
+        {
+            Id = "master-detail",
+            Title = "Master-Detail Form",
+            Description = "Invoice form with a customer LOV lookup, editable line items, and live computed totals.",
+            Icon = Icons.Material.Filled.TableView,
+            Category = "form-examples",
+            Order = 20,
+            Level = Levels.Advanced,
+            LevelOrder = 6,
+            Prerequisites = ["lov-field", "complex-dependencies"],
+            Concepts = ["Master-Detail", "Collection Fields", "Computed Totals"],
+            EstimatedMinutes = 15
+        },
 
         // ===========================================
         // DOCUMENTATION (unchanged)
@@ -363,9 +391,12 @@ public class DemoRegistry : IDemoRegistry
 
     private static readonly Dictionary<string, (string Name, string Icon, Color Color)> LevelInfoMap = new()
     {
-        [Levels.Beginner] = ("Beginner", Icons.Material.Filled.School, Color.Success),
-        [Levels.Intermediate] = ("Intermediate", Icons.Material.Filled.TrendingUp, Color.Warning),
-        [Levels.Advanced] = ("Advanced", Icons.Material.Filled.Whatshot, Color.Error)
+        // All three share the primary colour on purpose. Difficulty is a scale, not a
+        // status, and the old green/amber/red made "Advanced" look like an error.
+        // LevelMeter draws the scale itself.
+        [Levels.Beginner] = ("Beginner", Icons.Material.Filled.School, Color.Primary),
+        [Levels.Intermediate] = ("Intermediate", Icons.Material.Filled.TrendingUp, Color.Primary),
+        [Levels.Advanced] = ("Advanced", Icons.Material.Filled.Whatshot, Color.Primary)
     };
 
     private static readonly string[] LevelOrder = [Levels.Beginner, Levels.Intermediate, Levels.Advanced];
@@ -382,7 +413,9 @@ public class DemoRegistry : IDemoRegistry
     {
         var current = GetDemo(currentId);
         if (current == null)
+        {
             return (null, null);
+        }
 
         var categoryDemos = GetDemosByCategory(current.Category).ToList();
         var index = categoryDemos.FindIndex(d => d.Id.Equals(currentId, StringComparison.OrdinalIgnoreCase));
@@ -406,7 +439,9 @@ public class DemoRegistry : IDemoRegistry
     {
         var current = GetDemo(currentId);
         if (current == null || current.Category != "form-examples")
+        {
             return (null, null);
+        }
 
         // Get all form examples ordered by level then by level order
         var learningPath = AllDemos
@@ -417,7 +452,9 @@ public class DemoRegistry : IDemoRegistry
 
         var index = learningPath.FindIndex(d => d.Id.Equals(currentId, StringComparison.OrdinalIgnoreCase));
         if (index < 0)
+        {
             return (null, null);
+        }
 
         var previous = index > 0 ? learningPath[index - 1] : null;
         var next = index < learningPath.Count - 1 ? learningPath[index + 1] : null;

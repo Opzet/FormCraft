@@ -47,12 +47,15 @@ public static class AttributeFormBuilderExtensions
                             .WithInputType("email");
 
                         if (!string.IsNullOrEmpty(emailAttr.Placeholder))
+                        {
                             field.WithPlaceholder(emailAttr.Placeholder);
+                        }
 
                         if (emailAttr.ValidateFormat)
                         {
+                            // Empty values pass the format check; requiredness is controlled by [Required]
                             field.WithValidator(value =>
-                                    !string.IsNullOrEmpty(value) && value.Contains("@") && value.Contains("."),
+                                    string.IsNullOrEmpty(value) || (value.Contains("@") && value.Contains(".")),
                                 "Please enter a valid email address");
                         }
 
@@ -74,7 +77,9 @@ public static class AttributeFormBuilderExtensions
                         field.WithLabel(textAreaAttr.Label);
 
                         if (!string.IsNullOrEmpty(textAreaAttr.Placeholder))
+                        {
                             field.WithPlaceholder(textAreaAttr.Placeholder);
+                        }
 
                         field.WithAttribute("rows", textAreaAttr.Rows);
 
@@ -85,7 +90,9 @@ public static class AttributeFormBuilderExtensions
                         }
 
                         if (textAreaAttr.AutoResize)
+                        {
                             field.WithAttribute("auto-resize", true);
+                        }
 
                         ApplyValidationAttributes(field, prop, textAreaAttr.Label);
                     });
@@ -121,10 +128,14 @@ public static class AttributeFormBuilderExtensions
                         field.WithLabel(checkboxAttr.Label);
 
                         if (!string.IsNullOrEmpty(checkboxAttr.Text))
+                        {
                             field.WithAttribute("text", checkboxAttr.Text);
+                        }
 
                         if (checkboxAttr.DefaultChecked)
+                        {
                             field.WithAttribute("default-checked", true);
+                        }
                     });
                     continue;
                 }
@@ -154,7 +165,9 @@ public static class AttributeFormBuilderExtensions
                  .WithInputType(inputType);
 
             if (!string.IsNullOrEmpty(placeholder))
+            {
                 field.WithPlaceholder(placeholder);
+            }
 
             ApplyValidationAttributes(field, prop, label);
         });
@@ -201,16 +214,24 @@ public static class AttributeFormBuilderExtensions
              .WithInputType("number");
 
         if (!string.IsNullOrEmpty(numberAttr.Placeholder))
+        {
             field.WithPlaceholder(numberAttr.Placeholder);
+        }
 
         if (numberAttr.Min.HasValue)
+        {
             field.WithAttribute("min", numberAttr.Min.Value);
+        }
 
         if (numberAttr.Max.HasValue)
+        {
             field.WithAttribute("max", numberAttr.Max.Value);
+        }
 
         if (numberAttr.Step.HasValue)
+        {
             field.WithAttribute("step", numberAttr.Step.Value);
+        }
 
         ApplyValidationAttributes(field, prop, numberAttr.Label);
     }
@@ -240,16 +261,24 @@ public static class AttributeFormBuilderExtensions
              .WithInputType("date");
 
         if (!string.IsNullOrEmpty(dateAttr.Placeholder))
+        {
             field.WithPlaceholder(dateAttr.Placeholder);
+        }
 
         if (dateAttr.MinDate.HasValue)
+        {
             field.WithAttribute("min", dateAttr.MinDate.Value.ToString("yyyy-MM-dd"));
+        }
 
         if (dateAttr.MaxDate.HasValue)
+        {
             field.WithAttribute("max", dateAttr.MaxDate.Value.ToString("yyyy-MM-dd"));
+        }
 
         if (!string.IsNullOrEmpty(dateAttr.Format))
+        {
             field.WithAttribute("format", dateAttr.Format);
+        }
 
         ApplyValidationAttributes(field, prop, dateAttr.Label);
     }
@@ -279,16 +308,24 @@ public static class AttributeFormBuilderExtensions
             field.WithLabel(selectAttr.Label);
 
             if (!string.IsNullOrEmpty(selectAttr.Placeholder))
+            {
                 field.WithPlaceholder(selectAttr.Placeholder);
+            }
 
             if (selectAttr.Options != null && selectAttr.Options.Length > 0)
+            {
                 field.WithAttribute("options", selectAttr.Options);
+            }
 
             if (selectAttr.AllowMultiple)
+            {
                 field.WithAttribute("multiple", true);
+            }
 
             if (!string.IsNullOrEmpty(selectAttr.OptionsProviderName))
+            {
                 field.WithAttribute("options-provider", selectAttr.OptionsProviderName);
+            }
 
             ApplyValidationAttributes(field, prop, selectAttr.Label);
         });
@@ -299,21 +336,26 @@ public static class AttributeFormBuilderExtensions
     {
         var required = prop.GetCustomAttribute<RequiredAttribute>();
         if (required != null)
+        {
             field.Required(required.ErrorMessage ?? $"{label} is required");
+        }
 
         // Only apply string-specific validations for string fields
         if (typeof(TValue) == typeof(string))
         {
-            var stringField = field as FieldBuilder<TModel, string>;
-            if (stringField != null)
+            if (field is FieldBuilder<TModel, string> stringField)
             {
                 var minLength = prop.GetCustomAttribute<MinLengthAttribute>();
                 if (minLength != null)
+                {
                     stringField.WithMinLength(minLength.Length, minLength.ErrorMessage ?? $"Must be at least {minLength.Length} characters");
+                }
 
                 var maxLength = prop.GetCustomAttribute<MaxLengthAttribute>();
                 if (maxLength != null)
+                {
                     stringField.WithMaxLength(maxLength.Length, maxLength.ErrorMessage ?? $"Must be no more than {maxLength.Length} characters");
+                }
             }
         }
 
@@ -322,6 +364,8 @@ public static class AttributeFormBuilderExtensions
         {
             field.WithAttribute("min", range.Minimum);
             field.WithAttribute("max", range.Maximum);
+            field.WithValidator(value => value == null || range.IsValid(value),
+                range.ErrorMessage ?? $"Must be between {range.Minimum} and {range.Maximum}");
         }
 
         var pattern = prop.GetCustomAttribute<RegularExpressionAttribute>();
@@ -330,7 +374,11 @@ public static class AttributeFormBuilderExtensions
             field.WithAttribute("pattern", pattern.Pattern);
             field.WithValidator(value =>
             {
-                if (value == null) return true;
+                if (value == null)
+                {
+                    return true;
+                }
+
                 return System.Text.RegularExpressions.Regex.IsMatch(value.ToString()!, pattern.Pattern);
             }, pattern.ErrorMessage ?? "Invalid format");
         }

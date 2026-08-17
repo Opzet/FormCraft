@@ -1,0 +1,207 @@
+name: release-please
+
+# Derives the next semantic version from the Conventional Commits on `dev` and keeps a release PR
+# up to date (rewriting CHANGELOG.md + .release-please-manifest.json). Merging that PR tags vX.Y.Z
+# and creates the GitHub Release.
+#
+# Two things differ from the other release-please repos in this portfolio (Koine, AdrMcp,
+# x402-dotnet, blazor-tailwind-ui, ai-migration-kit), and both are deliberate:
+#
+#   1. The target branch is `dev`, not `main`. `dev` is FormCraft's default branch; `main` is a
+#      release branch that this repo no longer merges into.
+#   2. The version is written into NO file. FormCraft's version comes from MinVer, which reads the
+#      git tag release-please creates — so the tag is the single source of truth. The other repos
+#      have release-please rewrite a <Version> element in Directory.Build.props; here that element
+#      would be inert, because MinVer's targets override any version passed in (see build/Build.cs).
+#      This is why release-please-config.json has no `extra-files`; the reason is recorded there too.
+#
+# Publishing lives in the `nupkg` job of THIS workflow rather than in a tag-triggered workflow, and
+# it has to: release-please creates the tag with GITHUB_TOKEN, and GitHub deliberately does not fire
+# `on: push: tags` / `on: release` for events created by that token. A tag-triggered publish would
+# therefore never run again — silently, with no failed run to notice.
+
+on:
+  push:
+    branches: [dev]
+  # Manual re-run, for when the push-triggered run failed or was missed.
+  #
+  # ⚠️ This is NOT an unconditional dry-run. In the ordinary case — no merged release PR waiting to
+  # be processed — release-please only refreshes the release PR, `release_created` stays false, and
+  # the job runs `./build.cmd Pack`, a target with no path to `Publish` at all (#221). But if a
+  # release PR has already been merged and its own run did not complete, a dispatch will legitimately
+  # finish the job: create the tag and the Release, set `release_created` to true, and publish. That
+  # is the intended recovery path; just do not click it expecting a guaranteed no-op.
+  #
+  # So the guarantee is precise: a dispatch cannot publish *when no release was created*, and that
+  # holds because a non-releasing run never invokes the publishing target — not because a gate inside
+  # that target is expected to hold.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  # Required to create and apply the `autorelease: pending` label. release-please finds a merged
+  # release PR *solely* by that label, and this repo has no `autorelease:*` label yet, so it must
+  # create one (POST /repos/{o}/{r}/labels — an Issues-scoped endpoint). Without this the release PR
+  # is opened and can be merged, but is never recognised afterwards: no tag, no Release,
+  # `release_created` stays false, the nupkg job skips, and nothing publishes — with no failed step.
+  issues: write
+
+# Serialize release-please runs. The action pushes a release-PR branch and, on merge, creates the
+# tag and the GitHub Release; two overlapping runs could race on the tag/manifest. Never cancel an
+# in-progress run — cancelling mid-tag can leave the tag/manifest half-applied.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    # Backstop so a wedged step can't run to the 6-hour default.
+    timeout-minutes: 15
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
+        id: release
+        with:
+          target-branch: dev
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Packs and publishes both packages for the release the job above just tagged. Deliberately thin:
+  # because it checks out the tag, Nuke's PublishIfNeeded gate — OnlyWhenStatic(IsOnVersionTag() &&
+  # IsServerBuild) — is already satisfied, so `./build.cmd Continuous` publishes exactly as it did
+  # from the old tag-triggered workflow and build/Build.cs needs no change at all.
+  #
+  # Safety properties this job depends on:
+  #   - No publish path may ever run on `pull_request`. This workflow has no pull_request trigger,
+  #     and a fork could not obtain this repository's OIDC token anyway — minting a key on a PR
+  #     would be both pointless and a hard failure.
+  #   - A run that only refreshes the release PR invokes `./build.cmd Pack`, a target that has no
+  #     path to `Publish` — it builds and packs and sends nothing to nuget.org. This is structural,
+  #     not a gate: `Continuous` (which triggers PublishIfNeeded) is invoked ONLY on the
+  #     `release_created == 'true'` branch (#221). See the `workflow_dispatch` note above for the one
+  #     case where a manual run legitimately does publish.
+  #   - The tag and the GitHub Release are created BEFORE this job builds anything. If this job
+  #     fails, the release exists with no packages attached. Recover with **Re-run failed jobs** —
+  #     "Re-run all jobs" re-runs release-please, which now sees the release already created,
+  #     reports `release_created: false`, and skips this job entirely.
+  #   - Publishing requires a nuget.org Trusted Publishing policy for EACH package — FormCraft,
+  #     FormCraft.ForMudBlazor and FormCraft.ForFluentUI — naming this repository and THIS workflow
+  #     file (release-please.yml — it named continuous.yml until this change), plus the NUGET_USER
+  #     secret holding the nuget.org profile name.
+  #     ⚠️ FormCraft.ForFluentUI is NEW as of #260 and has never been published, so it has no policy
+  #     until someone creates one. `Publish` globs artifacts/*.nupkg and will pick it up, and
+  #     `--skip-duplicate` does NOT cover a 403 — an unregistered package id fails the push. That
+  #     failure lands in the worst possible position (see the bullet above: the tag and GitHub
+  #     Release already exist). Create the policy BEFORE the first release that includes it. A new
+  #     package also needs its first push made by an account allowed to claim the id.
+  nupkg:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # upload the .nupkg files as release assets
+      id-token: write # request the GitHub OIDC token for NuGet Trusted Publishing
+    # Feeds the login step's `user:` input below. Job-level rather than step-level so the name is
+    # declared once, next to the job that needs it.
+    env:
+      NUGET_USER: ${{ secrets.NUGET_USER }}
+    steps:
+      # `ref` and `fetch-depth: 0` are BOTH required: MinVer derives the package version from the
+      # git tag, so without the tag checked out and the full history fetched it resolves no tag and
+      # both packages would pack as 0.0.0-alpha.0.N. On a workflow_dispatch dry-run tag_name is
+      # empty and checkout falls back to the default ref, which is the intent.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          fetch-depth: 0
+
+      - name: 'Setup: .NET SDK'
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      # Trusted Publishing: exchanges the OIDC token for a NuGet key valid ~1 hour, so no long-lived
+      # secret is stored. Nuke reads it from the NUGET_API_KEY environment variable exactly as
+      # before, so build/Build.cs is unchanged — it neither knows nor cares that the key expires.
+      # Kept adjacent to the run step below so the ~1h key cannot expire before it is used.
+      #
+      # Gated on `release_created` ONLY, and deliberately NOT on `env.NUGET_USER != ''` (#226).
+      # Those two guards fail in opposite directions. `release_created == false` means nothing was
+      # meant to publish, so skipping is correct. A missing NUGET_USER means a release WAS meant to
+      # publish and could not — and skipping there would leave the key output empty, gate Nuke's
+      # Publish off, and still report this run green, on a version whose tag, changelog and GitHub
+      # Release already exist. Silently released-but-unpublished is the worst outcome for a path
+      # exercised a handful of times a year, so a missing secret must fail this step instead.
+      # The dry-run ergonomics a NUGET_USER guard would buy are already bought by `release_created`,
+      # which is false on every workflow_dispatch that has no merged release PR to finish.
+      # Failing after the tag exists is safe: Publish uses --skip-duplicate (EnableSkipDuplicate in
+      # build/Build.cs), so re-running this job once the secret is restored is idempotent.
+      # ⛔ Do not "simplify" the NUGET_USER clause back in — pinned by
+      # TrustedPublishingWorkflowTests.ReleaseWorkflow_Should_Not_Gate_The_Login_On_The_NuGetUser_Secret.
+      - name: NuGet login (OIDC -> short-lived key)
+        id: login
+        if: ${{ needs.release-please.outputs.release_created == 'true' }}
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ env.NUGET_USER }}
+
+      # The run step is split in two on `release_created`, and the split is the guarantee (#221).
+      #
+      # A non-releasing run invokes `Pack`, a target that has no path to `Publish` at all — the same
+      # reason continuous.yml invokes `Pack` rather than `Continuous`. Previously a single
+      # unconditional `./build.cmd Continuous` ran on every invocation, and `Continuous` triggers
+      # `PublishIfNeeded`, so nothing structural stopped a dispatch from reaching the publish target:
+      # safety rested entirely on PublishIfNeeded's `OnlyWhenStatic(IsOnVersionTag() && IsServerBuild)`
+      # gate holding. That gate is real, but it is a runtime check on the tag rather than an absence
+      # of the code path, and `origin/main` IS the v3.1.0 commit — so a dispatch that happened to
+      # check out a tagged commit satisfied it. One target that cannot publish is a stronger claim
+      # than one that is expected not to.
+      #
+      # The two conditions are exhaustive and mutually exclusive, so exactly one step runs on every
+      # invocation and the job can never silently do neither.
+      #
+      # ⛔ The publishing step below is byte-identical to the step this replaced, apart from its `if:`
+      # — the real release path is deliberately unchanged.
+      - name: 'Run: Pack (no release — cannot publish)'
+        if: ${{ needs.release-please.outputs.release_created != 'true' }}
+        run: ./build.cmd Pack
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Test, Pack, then PublishIfNeeded -> Publish.
+      # `dotnet nuget push` runs with --skip-duplicate (EnableSkipDuplicate in build/Build.cs), so
+      # re-running a release is idempotent.
+      - name: 'Run: Continuous'
+        if: ${{ needs.release-please.outputs.release_created == 'true' }}
+        run: ./build.cmd Continuous
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # See ci.yml's copy of this step for the full rationale (#225, #231). This is the copy #225
+      # deliberately left alone — its Global Constraints forbade touching this file — so it was left
+      # uploading a `test-results` directory that Build.cs never created: running on `if: always()`
+      # and faithfully producing nothing. #231 fixed the emitting end rather than the path, so this
+      # step became correct without moving; `if-no-files-found: ignore` is what it was still missing,
+      # and it matters most here, where the publish job can fail long before Test.
+      - name: 'Publish: test-results'
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: test-results
+          if-no-files-found: ignore
+
+      # Symbol packages included: Pack produces .snupkg alongside .nupkg, and the removed
+      # CreateGitHubRelease target attached both. `*.nupkg` does not match `*.snupkg`.
+      - name: Attach packages to the GitHub Release
+        if: ${{ needs.release-please.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: gh release upload "$TAG" ./artifacts/*.nupkg ./artifacts/*.snupkg --clobber

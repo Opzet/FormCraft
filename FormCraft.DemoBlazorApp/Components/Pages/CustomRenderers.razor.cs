@@ -53,7 +53,7 @@ public partial class CustomRenderers
             "Not handling null values or default states properly in custom renderers",
             "Forgetting to pass through label, placeholder, and help text to the custom component"
         ],
-        RelatedDemoIds = ["field-groups", "validation", "conditional-fields", "field-dependencies"]
+        RelatedDemoIds = ["field-groups", "fluent-validation-demo", "complex-dependencies"]
     };
 
     // Legacy properties for backward compatibility with existing razor template
@@ -127,7 +127,11 @@ public partial class CustomRenderers
         StateHasChanged();
 
         // Simulate API call
-        await Task.Delay(2000);
+        if (!await DelayAsync(2000))
+        {
+            return;
+        }
+
 
         _isSubmitted = true;
         _isSubmitting = false;

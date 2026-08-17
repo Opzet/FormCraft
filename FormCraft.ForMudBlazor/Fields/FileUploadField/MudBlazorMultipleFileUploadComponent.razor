@@ -1,10 +1,15 @@
 @namespace FormCraft.ForMudBlazor
 @typeparam TModel
-@inherits FieldComponentBase<TModel, IReadOnlyList<IBrowserFile>?>
+@inherits MudBlazorFileUploadComponentBase<TModel, IReadOnlyList<IBrowserFile>?>
 
-@if (!string.IsNullOrEmpty(Label))
+@if (HasLabel)
 {
-    <MudText Typo="Typo.body2" Class="mb-1">@Label</MudText>
+    <MudText Typo="Typo.body2" Class="mb-1">
+        @Label@if (NativeRequiredValue)
+        {
+            <FileUploadRequiredMarker />
+        }
+    </MudText>
 }
 
 <MudFileUpload @ref="@_fileUpload"
@@ -16,6 +21,7 @@
                InputClass="absolute mud-width-full mud-height-full overflow-hidden z-10 opacity-0"
                ErrorText="@string.Empty"
                tabindex="-1"
+               aria-label="@FileInputAccessibleName"
                @ondrop="@ClearDragClass"
                @ondragenter="@SetDragClass"
                @ondragleave="@ClearDragClass"
@@ -64,24 +70,35 @@
 </MudFileUpload>
 
 <MudToolBar Gutters="@false" Class="relative d-flex justify-end gap-4 mt-2">
-    <MudButton Color="Color.Primary"
+    @* @ref so ClearAsync can return focus here — the Clear All button unmounts itself, so without
+       this focus falls to <body> (#281). *@
+    <MudButton @ref="@BrowseButton"
+               Color="Color.Primary"
                OnClick="@OpenFilePickerAsync"
-               Variant="Variant.Filled"
+               Variant="@ButtonVariant"
                StartIcon="@Icons.Material.Filled.FolderOpen"
-               Size="Size.Small">
+               Size="Size.Small"
+               aria-describedby="@RequiredDescribedBy">
         Browse
     </MudButton>
     @if (CurrentValue?.Any() == true)
     {
         <MudButton Color="Color.Error"
                    OnClick="@ClearAsync"
-                   Variant="Variant.Filled"
+                   Variant="@ButtonVariant"
                    StartIcon="@Icons.Material.Filled.Clear"
                    Size="Size.Small">
             Clear All
         </MudButton>
     }
 </MudToolBar>
+
+@if (NativeRequiredValue)
+{
+    @* Rendered outside the label's @if on purpose: a field with a blank label has no visible
+       marker to carry, so this description is the only channel left to it. *@
+    <FileUploadRequiredHint Id="@RequiredDescriptionId" Text="@RequiredDescription" />
+}
 
 @if (!string.IsNullOrEmpty(HelpText))
 {

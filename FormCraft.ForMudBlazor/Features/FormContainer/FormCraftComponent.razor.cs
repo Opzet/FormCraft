@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MudBlazor;
 
 namespace FormCraft.ForMudBlazor;
@@ -43,7 +44,77 @@ public partial class FormCraftComponent<TModel>
     [Parameter]
     public EventCallback<EditContext> OnEditContextCreated { get; set; }
 
+    /// <summary>
+    /// Default MudBlazor <see cref="Variant"/> applied to every rendered input field.
+    /// Individual fields override it via the <c>.WithVariant(...)</c> builder extension.
+    /// Defaults to <see cref="Variant.Outlined"/>.
+    /// </summary>
+    [Parameter]
+    public Variant DefaultVariant { get; set; } = Variant.Outlined;
+
+    /// <summary>
+    /// Default value for MudBlazor's <c>ShrinkLabel</c> on every rendered input field.
+    /// Individual fields override it via the <c>.WithShrinkLabel(...)</c> builder extension.
+    /// Defaults to <c>true</c>, which keeps each label pinned above its input.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Set this to <c>false</c> alongside <see cref="DefaultVariant"/> =
+    /// <see cref="Variant.Text"/>: that variant draws no border for a shrunk label to sit
+    /// in, so the label should float up from inside the input on focus instead.
+    /// </para>
+    /// <para>
+    /// <b><c>false</c> only has a visible effect on empty fields with no placeholder and no
+    /// start adornment.</b> MudBlazor ORs <c>ShrinkLabel</c> with those conditions, so fields
+    /// that have a value, a placeholder or a start adornment keep their label pinned
+    /// regardless. Fields configured with a placeholder are unaffected by this parameter.
+    /// </para>
+    /// </remarks>
+    [Parameter]
+    public bool DefaultShrinkLabel { get; set; } = true;
+
+    /// <summary>
+    /// Stable identifier used for security enforcement (rate limiting and audit log
+    /// entries) configured via <c>WithSecurity()</c>. Set this to a per-user or
+    /// per-session value (e.g. user id, circuit id, IP address) so limits are not
+    /// shared across all users. Defaults to the model type name.
+    /// </summary>
+    [Parameter]
+    public string? SecurityContextId { get; set; }
+
+    [Inject]
+    private IServiceProvider ServiceProvider { get; set; } = null!;
+
+    /// <summary>
+    /// Collects ShrinkLabel conflicts reported by this form's fields during the render pass, so
+    /// they surface as one warning naming every affected field rather than one warning each (#181).
+    /// </summary>
+    private readonly ShrinkLabelDiagnosticCollector _shrinkLabelDiagnostics = new();
+
+    /// <summary>
+    /// This form's diagnostic latch (#304), cascaded to every field it renders.
+    /// </summary>
+    /// <remarks>
+    /// A readonly field initialised once per component, deliberately — created in the markup or in a
+    /// lifecycle method it would be rebuilt on re-render and latch nothing. Cascaded with
+    /// <c>IsFixed="true"</c> for the same reason the collector above is: the reference never changes,
+    /// so subscribers need no change notifications.
+    /// <para>
+    /// ⚠️ Deliberately <b>not</b> rebuilt when <see cref="Configuration"/> is re-pointed, which is
+    /// where this differs from <c>CollectionFieldComponent</c>'s scope (that one is rebuilt in
+    /// <c>OnParametersSet</c> when it is aimed at a different collection). Swapping one form's
+    /// configuration for another keeps the latch, so a field of the same name tripping the same
+    /// diagnostic in both configurations reports once rather than twice. That is the intended
+    /// reading — it is the same form component telling the developer the same thing — and the
+    /// alternative costs a per-configuration rebuild to say it twice.
+    /// </para>
+    /// </remarks>
+    private readonly FormDiagnosticScope _formDiagnosticScope = new();
+
     private EditContext? _editContext;
+    private DynamicFormValidator<TModel>? _validator;
+    private string? _csrfToken;
+    private string? _securityError;
     private IGroupedFormConfiguration<TModel>? GroupedConfiguration => Configuration as IGroupedFormConfiguration<TModel>;
     private ICollectionFormConfiguration<TModel>? CollectionConfiguration => Configuration as ICollectionFormConfiguration<TModel>;
 
@@ -57,11 +128,202 @@ public partial class FormCraftComponent<TModel>
                 await OnEditContextCreated.InvokeAsync(_editContext);
             }
         }
+        await InitializeSecurityAsync();
         await base.OnInitializedAsync();
+    }
+
+    /// <inheritdoc />
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        // Every field has now rendered and reported, so the collector holds the current set.
+        // Flush reports each field once but stays live, so fields revealed later (a visibility
+        // condition, an expanded group, a new collection row) are still picked up. Resolving the
+        // logger is Flush's job — it happens inside that method's exception guard.
+        _shrinkLabelDiagnostics.Flush(ServiceProvider);
+    }
+
+    /// <summary>
+    /// Identifier used for rate limiting and audit log entries:
+    /// <see cref="SecurityContextId"/> when provided, otherwise the model type name.
+    /// </summary>
+    private string EffectiveSecurityContextId =>
+        string.IsNullOrWhiteSpace(SecurityContextId) ? typeof(TModel).Name : SecurityContextId;
+
+    private async Task InitializeSecurityAsync()
+    {
+        if (Configuration?.Security?.IsCsrfProtectionEnabled != true)
+        {
+            return;
+        }
+
+        var csrfTokenService = ServiceProvider.GetService<ICsrfTokenService>();
+        if (csrfTokenService == null)
+        {
+            _securityError = "CSRF protection is enabled for this form, but no ICsrfTokenService is registered. Call AddFormCraft() (or register a custom ICsrfTokenService) to enable submissions.";
+            LogSecurityError("CSRF protection is enabled on form '{FormId}' but no ICsrfTokenService is registered in DI.", EffectiveSecurityContextId);
+            return;
+        }
+
+        _csrfToken = await csrfTokenService.GenerateTokenAsync();
+    }
+
+    /// <summary>
+    /// Enforces the security settings configured via <c>WithSecurity()</c> before a
+    /// submission is processed. Returns false (and sets a user-visible error) when the
+    /// submission must be blocked.
+    /// </summary>
+    private async Task<bool> EnforceSecurityAsync()
+    {
+        _securityError = null;
+        var security = Configuration?.Security;
+        if (security == null)
+        {
+            return true;
+        }
+
+        // Rate limiting runs first so blocked submissions never reach validation.
+        if (security.RateLimit is { } rateLimit)
+        {
+            var rateLimitService = ServiceProvider.GetService<IRateLimitService>();
+            if (rateLimitService == null)
+            {
+                _securityError = "Rate limiting is enabled for this form, but no IRateLimitService is registered. Call AddFormCraft() (or register a custom IRateLimitService) to enable submissions.";
+                LogSecurityError("Rate limiting is enabled on form '{FormId}' but no IRateLimitService is registered in DI.", EffectiveSecurityContextId);
+                return false;
+            }
+
+            var rateLimitResult = await rateLimitService.CheckRateLimitAsync(
+                EffectiveSecurityContextId, rateLimit.MaxAttempts, rateLimit.TimeWindow);
+
+            if (!rateLimitResult.IsAllowed)
+            {
+                _securityError = rateLimitResult.RetryAfter is { } retryAfter && retryAfter > TimeSpan.Zero
+                    ? $"Too many submissions. Please try again in {Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds))} seconds."
+                    : "Too many submissions. Please try again later.";
+                await LogSubmissionAuditEventAsync(AuditEventTypes.FormRejected, AuditEventTypes.RateLimitExceeded);
+                return false;
+            }
+
+            await rateLimitService.RecordAttemptAsync(EffectiveSecurityContextId);
+        }
+
+        if (security.IsCsrfProtectionEnabled)
+        {
+            var csrfTokenService = ServiceProvider.GetService<ICsrfTokenService>();
+            if (csrfTokenService == null || _csrfToken == null)
+            {
+                _securityError ??= "This form could not be submitted because its security token is missing. Please reload the page and try again.";
+                LogSecurityError("CSRF validation could not run on form '{FormId}': service or token missing.", EffectiveSecurityContextId);
+                await LogSubmissionAuditEventAsync(AuditEventTypes.FormRejected, AuditEventTypes.CsrfValidationFailed);
+                return false;
+            }
+
+            if (!await csrfTokenService.ValidateTokenAsync(_csrfToken))
+            {
+                _securityError = "Your session could not be verified. Please reload the page and try again.";
+                await LogSubmissionAuditEventAsync(AuditEventTypes.FormRejected, AuditEventTypes.CsrfValidationFailed);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Writes a submission-related audit entry via the optional <see cref="IAuditLogService"/>,
+    /// redacting fields listed in ExcludedFields as well as fields marked for encryption.
+    /// </summary>
+    private async Task LogSubmissionAuditEventAsync(string eventType, string? reason = null)
+    {
+        var security = Configuration?.Security;
+        if (security is not { IsAuditLoggingEnabled: true })
+        {
+            return;
+        }
+
+        if (security.AuditLog is { LogSubmissions: false })
+        {
+            return;
+        }
+
+        var auditLogService = ServiceProvider.GetService<IAuditLogService>();
+        if (auditLogService == null)
+        {
+            return;
+        }
+
+        var entry = new AuditLogEntry
+        {
+            EventType = eventType,
+            FormId = EffectiveSecurityContextId,
+        };
+
+        if (reason != null)
+        {
+            entry.AdditionalData["Reason"] = reason;
+        }
+
+        var excludedFields = security.AuditLog?.ExcludedFields;
+        foreach (var field in Configuration!.Fields)
+        {
+            if (excludedFields?.Contains(field.FieldName) == true ||
+                security.EncryptedFields.Contains(field.FieldName))
+            {
+                entry.AdditionalData[field.FieldName] = "[REDACTED]";
+                continue;
+            }
+
+            var property = typeof(TModel).GetProperty(field.FieldName);
+            entry.AdditionalData[field.FieldName] = property?.GetValue(Model)?.ToString();
+        }
+
+        await auditLogService.LogAsync(entry);
+    }
+
+    private void LogSecurityError(string message, params object?[] args)
+    {
+        var logger = ServiceProvider.GetService<ILogger<FormCraftComponent<TModel>>>();
+#pragma warning disable CA2254 // Template is a constant supplied by the callers above
+        logger?.LogError(message, args);
+#pragma warning restore CA2254
+    }
+
+    /// <summary>
+    /// Returns the values of the fields configured for encryption via
+    /// <c>WithSecurity(s =&gt; s.EncryptField(...))</c>, encrypted with the registered
+    /// <see cref="IEncryptionService"/>, so applications can persist them safely in one
+    /// call. The bound model is never modified.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no <see cref="IEncryptionService"/> is registered (call <c>AddFormCraft()</c>).
+    /// </exception>
+    public IReadOnlyDictionary<string, string?> GetEncryptedFieldValues()
+    {
+        var encryptionService = ServiceProvider.GetService<IEncryptionService>()
+            ?? throw new InvalidOperationException(
+                "No IEncryptionService is registered. Call AddFormCraft() (or register a custom IEncryptionService) before using GetEncryptedFieldValues().");
+
+        return encryptionService.EncryptConfiguredFields(Model, Configuration?.Security);
     }
 
     public bool Validate()
     {
+        return _editContext?.Validate() ?? false;
+    }
+
+    /// <summary>
+    /// Validates the form, awaiting any asynchronous validators before returning.
+    /// Prefer this over <see cref="Validate"/> when async validators are configured.
+    /// </summary>
+    public async Task<bool> ValidateAsync()
+    {
+        if (_validator != null)
+        {
+            return await _validator.ValidateModelAsync();
+        }
+
         return _editContext?.Validate() ?? false;
     }
 
@@ -74,243 +336,37 @@ public partial class FormCraftComponent<TModel>
     {
         return builder =>
         {
-            var property = typeof(TModel).GetProperty(field.FieldName);
-            if (property == null) return;
-
-            var fieldType = property.PropertyType;
-            var underlyingType = Nullable.GetUnderlyingType(fieldType) ?? fieldType;
-            var value = property.GetValue(Model);
-
-            // Check for fields with options (select/dropdown)
-            if (field.AdditionalAttributes.TryGetValue("Options", out var optionsObj))
+            // Custom templates take precedence over every renderer
+            if (field.CustomTemplate != null && _editContext != null)
             {
-                RenderSelectField(builder, field, value, optionsObj);
-            }
-            // Check for custom renderer
-            else if (field.CustomRendererType != null)
-            {
-                RenderCustomField(builder, field, fieldType, value);
-            }
-            // Render based on field type
-            else if (fieldType == typeof(string))
-            {
-                RenderTextField(builder, field, value as string);
-            }
-            else if (underlyingType == typeof(int))
-            {
-                RenderNumericField(builder, field, (int)(value ?? 0));
-            }
-            else if (underlyingType == typeof(decimal))
-            {
-                RenderNumericField(builder, field, (decimal)(value ?? 0m));
-            }
-            else if (underlyingType == typeof(double))
-            {
-                RenderNumericField(builder, field, (double)(value ?? 0.0));
-            }
-            else if (underlyingType == typeof(bool))
-            {
-                RenderBooleanField(builder, field, value ?? false);
-            }
-            else if (underlyingType == typeof(DateTime))
-            {
-                RenderDateTimeField(builder, field, value as DateTime?);
-            }
-            else if (fieldType == typeof(IBrowserFile) || fieldType == typeof(IReadOnlyList<IBrowserFile>))
-            {
-                RenderFileUploadField(builder, field);
-            }
-        };
-    }
-
-    private void RenderSelectField(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, object? value, object optionsObj)
-    {
-        var property = typeof(TModel).GetProperty(field.FieldName);
-        var valueType = property?.PropertyType ?? typeof(string);
-        var underlyingType = Nullable.GetUnderlyingType(valueType) ?? valueType;
-
-        // Use reflection to call the generic helper method with the correct TValue type
-        var method = typeof(FormCraftComponent<TModel>)
-            .GetMethod(nameof(RenderSelectFieldGeneric), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
-            .MakeGenericMethod(underlyingType);
-
-        method.Invoke(this, new object?[] { builder, field, value, optionsObj });
-    }
-
-    private void RenderSelectFieldGeneric<TValue>(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, object? value, object optionsObj)
-    {
-        var typedValue = value is TValue tv ? tv : default;
-
-        builder.OpenComponent<MudSelect<TValue>>(0);
-        AddCommonFieldAttributes(builder, field, 1);
-        builder.AddAttribute(2, "Value", typedValue);
-        builder.AddAttribute(3, "ValueChanged",
-            EventCallback.Factory.Create<TValue>(this,
-                newValue => UpdateFieldValue(field.FieldName, newValue)));
-        builder.AddAttribute(11, "ChildContent", RenderSelectOptions<TValue>(optionsObj));
-        builder.CloseComponent();
-    }
-
-    private RenderFragment RenderSelectOptions<TValue>(object optionsObj)
-    {
-        return builder =>
-        {
-            var sequence = 0;
-            if (optionsObj is IEnumerable<SelectOption<TValue>> typedOptions)
-            {
-                foreach (var option in typedOptions)
+                var property = typeof(TModel).GetProperty(field.FieldName);
+                if (property == null)
                 {
-                    builder.OpenComponent<MudSelectItem<TValue>>(sequence++);
-                    builder.AddAttribute(sequence++, "Value", option.Value);
-                    builder.AddAttribute(sequence++, "ChildContent",
-                        (RenderFragment)(itemBuilder => itemBuilder.AddContent(0, option.Label)));
-                    builder.CloseComponent();
+                    return;
                 }
+
+                var templateContext = new FieldContext<TModel, object>(
+                    Model,
+                    field,
+                    _editContext,
+                    () => property.GetValue(Model)!,
+                    newValue => _ = UpdateFieldValue(field.FieldName, newValue),
+                    EventCallback.Factory.Create<object>(this, newValue => UpdateFieldValue(field.FieldName, newValue)));
+                builder.AddContent(0, field.CustomTemplate(templateContext));
+                return;
             }
-            else if (optionsObj is System.Collections.IEnumerable options)
-            {
-                foreach (var option in options)
-                {
-                    var optionType = option.GetType();
-                    var valueProperty = optionType.GetProperty("Value");
-                    var labelProperty = optionType.GetProperty("Label");
 
-                    if (valueProperty != null && labelProperty != null)
-                    {
-                        var rawValue = valueProperty.GetValue(option);
-                        var optionValue = rawValue is TValue tv ? tv : default;
-                        var optionLabel = labelProperty.GetValue(option)?.ToString() ?? "";
-
-                        builder.OpenComponent<MudSelectItem<TValue>>(sequence++);
-                        builder.AddAttribute(sequence++, "Value", optionValue);
-                        builder.AddAttribute(sequence++, "ChildContent",
-                            (RenderFragment)(itemBuilder => itemBuilder.AddContent(0, optionLabel)));
-                        builder.CloseComponent();
-                    }
-                }
-            }
+            // Single rendering path: every field is dispatched through the
+            // FieldRendererService registry (#148). Type- and configuration-based
+            // selection (text, numeric, boolean, date, select, LOV, lookup,
+            // autocomplete, file upload, custom renderers) lives in the
+            // registered IFieldRenderer implementations.
+            builder.AddContent(0, FieldRendererService.RenderField(
+                Model,
+                field,
+                EventCallback.Factory.Create<object?>(this, val => UpdateFieldValue(field.FieldName, val)),
+                EventCallback.Factory.Create(this, () => HandleFieldDependencyChanged(field.FieldName))));
         };
-    }
-
-    private void RenderTextField(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, string? value)
-    {
-        // Create a proper FieldRenderContext to pass to MudBlazorTextFieldComponent
-        var context = new FieldRenderContext<TModel>
-        {
-            Model = Model,
-            Field = field,
-            ActualFieldType = typeof(string),
-            CurrentValue = value,
-            OnValueChanged = EventCallback.Factory.Create<object?>(this, val => UpdateFieldValue(field.FieldName, val)),
-            OnDependencyChanged = EventCallback.Factory.Create(this, () => HandleFieldDependencyChanged(field.FieldName))
-        };
-
-        // Render MudBlazorTextFieldComponent instead of MudTextField directly
-        builder.OpenComponent<MudBlazorTextFieldComponent<TModel>>(0);
-        builder.AddAttribute(1, "Context", context);
-        builder.CloseComponent();
-    }
-
-    private void RenderNumericField<T>(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, T value)
-        where T : struct
-    {
-        builder.OpenComponent(0, typeof(MudNumericField<>).MakeGenericType(typeof(T)));
-        AddCommonFieldAttributes(builder, field, 1);
-        builder.AddAttribute(2, "Value", value);
-        builder.AddAttribute(3, "ValueChanged",
-            EventCallback.Factory.Create<T>(this,
-                newValue => UpdateFieldValue(field.FieldName, newValue)));
-        builder.AddAttribute(4, "Immediate", true);
-
-        // Add culture and pattern to ensure proper decimal display
-        builder.AddAttribute(5, "Culture", System.Globalization.CultureInfo.InvariantCulture);
-        if (typeof(T) == typeof(decimal))
-        {
-            builder.AddAttribute(6, "Pattern", "[0-9]+([.,][0-9]+)?");
-        }
-
-        builder.CloseComponent();
-    }
-
-    private void RenderBooleanField(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, object value)
-    {
-        builder.OpenComponent<MudCheckBox<bool>>(0);
-        builder.AddAttribute(1, "Label", field.Label);
-        builder.AddAttribute(2, "Value", value);
-        builder.AddAttribute(3, "ValueChanged",
-            EventCallback.Factory.Create<bool>(this,
-                newValue => UpdateFieldValue(field.FieldName, newValue)));
-        builder.AddAttribute(4, "ReadOnly", field.IsReadOnly);
-        builder.AddAttribute(5, "Disabled", field.IsDisabled);
-        builder.CloseComponent();
-    }
-
-    private void RenderDateTimeField(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, DateTime? value)
-    {
-        builder.OpenComponent<MudDatePicker>(0);
-        AddCommonFieldAttributes(builder, field, 1);
-        builder.AddAttribute(2, "Date", value);
-        builder.AddAttribute(3, "DateChanged",
-            EventCallback.Factory.Create<DateTime?>(this,
-                newValue => UpdateFieldValue(field.FieldName, newValue)));
-        builder.CloseComponent();
-    }
-
-    private void RenderFileUploadField(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field)
-    {
-        builder.OpenComponent<MudFileUpload<IBrowserFile>>(0);
-        builder.AddAttribute(1, "OnFilesChanged",
-            EventCallback.Factory.Create<InputFileChangeEventArgs>(this,
-                args => HandleFileUpload(field.FieldName, args)));
-        builder.AddAttribute(2, "Accept",
-            field.AdditionalAttributes.GetValueOrDefault("Accept", "*/*"));
-        builder.AddAttribute(3, "Disabled", field.IsDisabled);
-        builder.AddAttribute(4, "CustomContent", RenderFileUploadButton(field));
-        builder.CloseComponent();
-    }
-
-    private RenderFragment RenderFileUploadButton(IFieldConfiguration<TModel, object> field)
-    {
-        return builder =>
-        {
-            builder.OpenComponent<MudButton>(0);
-            builder.AddAttribute(1, "HtmlTag", "label");
-            builder.AddAttribute(2, "Variant", Variant.Filled);
-            builder.AddAttribute(3, "Color", Color.Primary);
-            builder.AddAttribute(4, "StartIcon", Icons.Material.Filled.CloudUpload);
-            builder.AddAttribute(5, "for", field.FieldName);
-            builder.AddAttribute(6, "ChildContent",
-                (RenderFragment)(buttonBuilder => buttonBuilder.AddContent(0, field.Label ?? "Upload File")));
-            builder.CloseComponent();
-        };
-    }
-
-    private void RenderCustomField(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, Type fieldType, object? value)
-    {
-        var context = new FieldRenderContext<TModel>
-        {
-            Model = Model,
-            Field = field,
-            ActualFieldType = fieldType,
-            CurrentValue = value,
-            OnValueChanged = EventCallback.Factory.Create<object?>(this, val => UpdateFieldValue(field.FieldName, val)),
-            OnDependencyChanged = EventCallback.Factory.Create(this, () => HandleFieldDependencyChanged(field.FieldName))
-        };
-        builder.AddContent(0,
-            FieldRendererService.RenderField(Model, field, context.OnValueChanged, context.OnDependencyChanged));
-    }
-
-    private void AddCommonFieldAttributes(RenderTreeBuilder builder, IFieldConfiguration<TModel, object> field, int startIndex)
-    {
-        builder.AddAttribute(startIndex++, "Label", field.Label);
-        builder.AddAttribute(startIndex++, "Placeholder", field.Placeholder);
-        builder.AddAttribute(startIndex++, "HelperText", field.HelpText);
-        builder.AddAttribute(startIndex++, "Required", field.IsRequired);
-        builder.AddAttribute(startIndex++, "ReadOnly", field.IsReadOnly);
-        builder.AddAttribute(startIndex++, "Disabled", field.IsDisabled);
-        builder.AddAttribute(startIndex++, "Variant", Variant.Outlined);
-        builder.AddAttribute(startIndex++, "Margin", Margin.Dense);
-        builder.AddAttribute(startIndex, "ShrinkLabel", true);
     }
 
     private async Task UpdateFieldValue(string fieldName, object? value)
@@ -336,6 +392,10 @@ public partial class FormCraftComponent<TModel>
 
             property.SetValue(Model, convertedValue);
 
+            // Notify the EditContext so field-level validation runs and stale
+            // error messages clear as soon as the user corrects the value.
+            _editContext?.NotifyFieldChanged(_editContext.Field(fieldName));
+
             if (OnFieldChanged.HasDelegate)
             {
                 await OnFieldChanged.InvokeAsync((fieldName, convertedValue));
@@ -348,33 +408,19 @@ public partial class FormCraftComponent<TModel>
         }
     }
 
-    private async Task HandleFileUpload(string fieldName, InputFileChangeEventArgs args)
-    {
-        var property = typeof(TModel).GetProperty(fieldName);
-        if (property != null)
-        {
-            if (property.PropertyType == typeof(IBrowserFile))
-            {
-                await UpdateFieldValue(fieldName, args.File);
-            }
-            else if (property.PropertyType == typeof(IReadOnlyList<IBrowserFile>))
-            {
-                await UpdateFieldValue(fieldName, args.GetMultipleFiles());
-            }
-        }
-    }
-
-    private Task HandleFieldDependencyChanged(string fieldName)
+    private async Task HandleFieldDependencyChanged(string fieldName)
     {
         if (Configuration.FieldDependencies.TryGetValue(fieldName, out var dependencies))
         {
             foreach (IFieldDependency<TModel> dependency in dependencies)
             {
-                dependency.OnDependencyChanged(Model);
+                await dependency.OnDependencyChangedAsync(Model);
             }
-        }
 
-        return Task.CompletedTask;
+            // Re-render after async callbacks settle so cascaded model mutations
+            // reach the UI without requiring a manual StateHasChanged call.
+            StateHasChanged();
+        }
     }
 
     private void HandleCollectionChanged()
@@ -393,13 +439,27 @@ public partial class FormCraftComponent<TModel>
         return field.IsVisible;
     }
 
-    private Task OnSubmit()
+    private async Task HandleSubmit()
     {
-        if (OnValidSubmit.HasDelegate)
+        // Enforce WithSecurity() settings (rate limiting, CSRF) before validation so
+        // blocked submissions never reach the application's submit handler.
+        if (!await EnforceSecurityAsync())
         {
-            return OnValidSubmit.InvokeAsync(Model);
+            StateHasChanged();
+            return;
         }
 
-        return Task.CompletedTask;
+        // EditForm's OnValidSubmit relies on the synchronous EditContext.Validate(),
+        // which returns before async validators finish. Await the full validation
+        // pass explicitly so async validators can block submission.
+        var isValid = _validator != null
+            ? await _validator.ValidateModelAsync()
+            : _editContext?.Validate() ?? false;
+
+        if (isValid && OnValidSubmit.HasDelegate)
+        {
+            await LogSubmissionAuditEventAsync(AuditEventTypes.FormSubmitted);
+            await OnValidSubmit.InvokeAsync(Model);
+        }
     }
 }

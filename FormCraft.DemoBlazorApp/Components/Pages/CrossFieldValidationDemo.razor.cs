@@ -7,13 +7,14 @@ using MudBlazor;
 
 namespace FormCraft.DemoBlazorApp.Components.Pages;
 
-public partial class CrossFieldValidationDemo : ComponentBase
+// Base supplied by @inherits DemoComponentBase in the .razor (see AsyncValueProviderDemo).
+public partial class CrossFieldValidationDemo
 {
     private BookingModel _model = new();
     private IFormConfiguration<BookingModel>? _formConfig;
     private bool _submitted;
     private bool _isSubmitting;
-    private List<string> _validationErrors = [];
+    private readonly List<string> _validationErrors = [];
 
     /// <summary>
     /// Structured documentation for this demo page.
@@ -56,7 +57,7 @@ public partial class CrossFieldValidationDemo : ComponentBase
             "Overly complex validation logic that's hard to debug - keep rules simple and focused",
             "Not providing clear error messages that indicate which fields are being compared"
         ],
-        RelatedDemoIds = ["fluent", "validation", "field-dependencies", "async-validation"]
+        RelatedDemoIds = ["fluent", "fluent-validation-demo", "complex-dependencies", "async-value-provider"]
     };
 
     // Legacy properties for backward compatibility with existing razor template
@@ -131,7 +132,10 @@ public partial class CrossFieldValidationDemo : ComponentBase
         _validationErrors.Clear();
         StateHasChanged();
 
-        await Task.Delay(1500);
+        if (!await DelayAsync(1500))
+        {
+            return;
+        }
 
         _submitted = true;
         _isSubmitting = false;

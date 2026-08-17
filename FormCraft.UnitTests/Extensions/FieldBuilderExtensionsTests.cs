@@ -192,6 +192,30 @@ public class FieldBuilderExtensionsTests
     }
 
     [Fact]
+    public async Task WithEmailValidation_Should_Allow_Null_Or_Empty()
+    {
+        // Arrange
+        var services = A.Fake<IServiceProvider>();
+
+        // Act
+        var config = FormBuilder<TestModel>.Create()
+            .AddField(x => x.Email, field => field
+                .WithEmailValidation())
+            .Build();
+
+        // Assert - format validation only; requiredness is Required()'s job
+        var field = config.Fields.First(f => f.FieldName == "Email");
+        var validator = field.Validators.First();
+        var model = new TestModel();
+
+        var nullResult = await validator.ValidateAsync(model, null!, services);
+        nullResult.IsValid.ShouldBeTrue();
+
+        var emptyResult = await validator.ValidateAsync(model, "", services);
+        emptyResult.IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task WithEmailValidation_Should_Use_Default_Message()
     {
         // Arrange
@@ -339,6 +363,37 @@ public class FieldBuilderExtensionsTests
 
         var invalidResult = await validator.ValidateAsync(model, 11, services);
         invalidResult.ErrorMessage.ShouldBe("Must be between 1 and 10");
+    }
+
+    [Fact]
+    public void WithAutocomplete_Should_Set_Lowercase_Autocomplete_Attribute()
+    {
+        // Arrange & Act
+        var config = FormBuilder<TestModel>.Create()
+            .AddField(x => x.Username, field => field
+                .WithAutocomplete("username"))
+            .Build();
+
+        // Assert
+        var field = config.Fields.First(f => f.FieldName == "Username");
+        field.AdditionalAttributes.ShouldContainKey("autocomplete");
+        field.AdditionalAttributes["autocomplete"].ShouldBe("username");
+    }
+
+    [Fact]
+    public void WithAutocomplete_Should_Return_Builder_For_Chaining()
+    {
+        // Arrange & Act - chaining keeps working after WithAutocomplete
+        var config = FormBuilder<TestModel>.Create()
+            .AddField(x => x.Email, field => field
+                .WithAutocomplete("email")
+                .WithLabel("Email"))
+            .Build();
+
+        // Assert
+        var field = config.Fields.First(f => f.FieldName == "Email");
+        field.Label.ShouldBe("Email");
+        field.AdditionalAttributes["autocomplete"].ShouldBe("email");
     }
 
     public class TestModel

@@ -66,7 +66,7 @@ public partial class PasswordFieldDemo
             "Avoid overly strict password requirements that frustrate users",
             "Always mask sensitive credentials in success displays and logs"
         ],
-        RelatedDemoIds = ["fluent", "validation", "field-dependencies"]
+        RelatedDemoIds = ["fluent", "fluent-validation-demo", "complex-dependencies"]
     };
 
     // Legacy properties for backward compatibility with existing razor template
@@ -112,6 +112,7 @@ public partial class PasswordFieldDemo
                 .WithLabel("Password")
                 .WithPlaceholder("Enter your password")
                 .WithInputType("password")  // Basic password masking
+                .WithAutocomplete("current-password")
                 .Required("Password is required"))
             .AddField(x => x.RememberMe, field => field
                 .WithLabel("Remember Me")
@@ -136,6 +137,7 @@ public partial class PasswordFieldDemo
                 .WithLabel("Password")
                 .WithPlaceholder("Create a strong password")
                 .AsPassword(enableVisibilityToggle: true)  // Password with visibility toggle!
+                .WithAutocomplete("new-password")
                 .Required("Password is required")
                 .WithMinLength(8, "Password must be at least 8 characters")
                 .WithHelpText("Use at least 8 characters with letters, numbers, and symbols"))
@@ -143,6 +145,7 @@ public partial class PasswordFieldDemo
                 .WithLabel("Confirm Password")
                 .WithPlaceholder("Re-enter your password")
                 .AsPassword(enableVisibilityToggle: true)
+                .WithAutocomplete("new-password")
                 .Required("Please confirm your password")
                 .WithHelpText("Must match the password above"))
             .AddField(x => x.AcceptTerms, field => field
@@ -189,7 +192,14 @@ public partial class PasswordFieldDemo
     private async Task HandleLoginSubmit()
     {
         _loginSubmitting = true;
-        await Task.Delay(1500); // Simulate API call
+
+        // No explicit StateHasChanged here — Blazor re-renders when the handler's task completes —
+        // but the guard is the same: if the page has gone, don't touch its state.
+        if (!await DelayAsync(1500)) // Simulate API call
+        {
+            return;
+        }
+
         _loginSubmitted = true;
         _loginSubmitting = false;
     }
@@ -214,7 +224,12 @@ public partial class PasswordFieldDemo
     private async Task HandleRegisterSubmit()
     {
         _registerSubmitting = true;
-        await Task.Delay(2000); // Simulate API call
+
+        if (!await DelayAsync(2000)) // Simulate API call
+        {
+            return;
+        }
+
         _registerSubmitted = true;
         _registerSubmitting = false;
     }
@@ -242,7 +257,12 @@ public partial class PasswordFieldDemo
     private async Task HandleSecuritySubmit()
     {
         _securitySubmitting = true;
-        await Task.Delay(1500); // Simulate API call
+
+        if (!await DelayAsync(1500)) // Simulate API call
+        {
+            return;
+        }
+
         _securitySubmitted = true;
         _securitySubmitting = false;
     }
@@ -265,8 +285,16 @@ public partial class PasswordFieldDemo
 
     private static string MaskCredential(string value)
     {
-        if (string.IsNullOrEmpty(value)) return "";
-        if (value.Length <= 8) return new string('•', value.Length);
+        if (string.IsNullOrEmpty(value))
+        {
+            return "";
+        }
+
+        if (value.Length <= 8)
+        {
+            return new string('•', value.Length);
+        }
+
         return $"{value[..4]}...{value[^4..]}";
     }
 
@@ -280,12 +308,35 @@ public partial class PasswordFieldDemo
         }
 
         int score = 0;
-        if (password.Length >= 8) score += 20;
-        if (password.Length >= 12) score += 10;
-        if (password.Any(char.IsUpper)) score += 20;
-        if (password.Any(char.IsLower)) score += 20;
-        if (password.Any(char.IsDigit)) score += 20;
-        if (password.Any(c => !char.IsLetterOrDigit(c))) score += 10;
+        if (password.Length >= 8)
+        {
+            score += 20;
+        }
+
+        if (password.Length >= 12)
+        {
+            score += 10;
+        }
+
+        if (password.Any(char.IsUpper))
+        {
+            score += 20;
+        }
+
+        if (password.Any(char.IsLower))
+        {
+            score += 20;
+        }
+
+        if (password.Any(char.IsDigit))
+        {
+            score += 20;
+        }
+
+        if (password.Any(c => !char.IsLetterOrDigit(c)))
+        {
+            score += 10;
+        }
 
         _passwordStrengthScore = Math.Min(score, 100);
     }

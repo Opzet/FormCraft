@@ -1,0 +1,18 @@
+@namespace FormCraft.ForMudBlazor
+@typeparam TModel
+@inherits MudBlazorFieldComponentBase<TModel, TimeOnly>
+
+<MudTimePicker
+    Label="@Label"
+    @bind-Time="@_localValue"
+    @bind-Time:after="OnLocalValueChanged"
+    Placeholder="@Placeholder"
+    HelperText="@HelpText"
+    ReadOnly="@IsReadOnly"
+    Disabled="@IsDisabled"
+    Variant="@EffectiveVariant"
+    Margin="Margin.Dense"
+    ShrinkLabel="@EffectiveShrinkLabel"
+    Required="@EffectiveNativeRequired"
+    Editable="true"
+    Clearable="@ShowClearButton" />

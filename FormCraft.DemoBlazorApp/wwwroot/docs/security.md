@@ -1,14 +1,24 @@
 # Security Features
 
-FormCraft provides comprehensive security features to protect your forms and sensitive data. This guide covers field-level encryption, CSRF protection, rate limiting, and audit logging.
+FormCraft provides security building blocks to protect your forms and sensitive data. This guide covers field-level encryption, CSRF protection, rate limiting, and audit logging.
 
 ## Overview
 
 FormCraft's security features help you:
 - **Encrypt sensitive fields** - Protect PII and sensitive data at rest
-- **Prevent CSRF attacks** - Built-in token validation
+- **Prevent CSRF attacks** - Token generation and validation services
 - **Limit form submissions** - Rate limiting to prevent spam
 - **Track user actions** - Comprehensive audit logging
+
+> **How enforcement works (v3.1+)**: `WithSecurity()` records the security settings on
+> the form configuration (accessible via `config.Security`), and `AddFormCraft()`
+> registers the supporting services (`IEncryptionService`, `ICsrfTokenService`,
+> `IRateLimitService`, `IAuditLogService`). The standard `FormCraftComponent` enforces
+> CSRF validation, rate limiting, and audit logging automatically: violating
+> submissions are blocked with a visible error before they ever reach your
+> `OnValidSubmit` handler. Field **encryption** remains an explicit application
+> concern — use `EncryptConfiguredFields()` / `GetEncryptedFieldValues()` when
+> persisting, as shown below.
 
 ## Quick Start
 
@@ -60,9 +70,28 @@ Configure encryption in `appsettings.json`:
 
 ### How It Works
 
-1. When a form is submitted, encrypted fields are automatically encrypted before processing
-2. When displaying a form, encrypted values are decrypted for editing
-3. The encryption uses AES-256 for strong security
+1. `EncryptField()` marks fields as sensitive in `config.Security.EncryptedFields`
+2. You encrypt/decrypt the marked fields with `IEncryptionService` when persisting or loading data:
+
+```csharp
+@inject IEncryptionService EncryptionService
+
+private async Task HandleSubmit(SecureFormModel model)
+{
+    // Encrypt marked fields before storing
+    var encryptedSsn = EncryptionService.Encrypt(model.SSN);
+    await SaveAsync(model with { SSN = encryptedSsn });
+}
+```
+
+> **Choosing an implementation**: `AddFormCraft()` registers `BlazorEncryptionService`
+> by default, which uses a simple XOR cipher so it can run in the browser
+> (WebAssembly). It is suitable for demos only. For production data, register the
+> server-side AES-256 implementation or your own:
+>
+> ```csharp
+> services.AddScoped<IEncryptionService, DefaultEncryptionService>(); // AES, server-side
+> ```
 
 ### Custom Encryption Service
 
@@ -106,10 +135,13 @@ Prevent Cross-Site Request Forgery attacks with built-in token validation.
 
 ### How It Works
 
-1. A unique token is generated when the form loads
-2. The token is included as a hidden field in the form
-3. On submission, the token is validated
-4. Invalid tokens result in form rejection
+`EnableCsrfProtection()` sets `IsCsrfProtectionEnabled` and `CsrfTokenFieldName` on
+`config.Security`. `FormCraftComponent` then generates a token via
+`ICsrfTokenService` when the form initializes and validates it before invoking
+`OnValidSubmit`. When validation fails, the submission is blocked and an error
+alert is shown above the submit button — no app-side code required. If CSRF
+protection is enabled but no `ICsrfTokenService` is registered, the component shows
+a clear misconfiguration error instead of crashing.
 
 ### Custom CSRF Service
 
@@ -134,7 +166,22 @@ Prevent spam and abuse by limiting form submissions.
     .WithRateLimit(5, TimeSpan.FromMinutes(1)))
 ```
 
-This allows 5 submissions per minute per IP address.
+This configures a limit of 5 submissions per minute per identifier.
+`FormCraftComponent` enforces it automatically via `IRateLimitService` *before*
+validation runs: blocked submissions show a friendly "try again later" message and
+never reach `OnValidSubmit`; allowed submissions record an attempt.
+
+The identifier defaults to the model type name, which is shared across all users.
+Pass a per-user value via the `SecurityContextId` parameter so limits apply per
+user/session:
+
+```razor
+<FormCraftComponent TModel="SecureFormModel"
+                    Model="@model"
+                    Configuration="@config"
+                    SecurityContextId="@userId"
+                    OnValidSubmit="@HandleSubmit" />
+```
 
 ### Custom Identifier
 
@@ -197,13 +244,19 @@ Track all form interactions for compliance and security monitoring.
 
 ### Audit Events
 
-FormCraft logs these events:
-- **FormLoaded** - When a form is displayed
-- **FieldChanged** - When a field value changes
-- **ValidationError** - When validation fails
-- **FormSubmitted** - When a form is successfully submitted
-- **RateLimitExceeded** - When rate limit is hit
-- **CsrfValidationFailed** - When CSRF validation fails
+`EnableAuditLogging()` stores the audit configuration (what to log, excluded fields)
+on `config.Security.AuditLog`. `FormCraftComponent` automatically writes
+submission entries via `IAuditLogService.LogAsync()`:
+
+- **FormSubmitted** - When a valid form submission reaches `OnValidSubmit`
+- **FormRejected** - When a submission is blocked (with a `Reason` of
+  `RateLimitExceeded` or `CsrfValidationFailed` in `AdditionalData`)
+
+Both entries include the current field values in `AdditionalData`; fields listed in
+`ExcludedFields` *and* fields marked with `EncryptField()` are written as
+`[REDACTED]`. You can still write additional entries (e.g. `FormLoaded`,
+`FieldChanged` via the `OnFieldChanged` callback, `ValidationError`) from your own
+handlers using the same service.
 
 ### Audit Log Entry Structure
 
@@ -283,25 +336,42 @@ var config = FormBuilder<SecureFormModel>.Create()
     .Build();
 ```
 
-## Using SecureFormCraftComponent
+## Rendering a Secure Form
 
-For forms with security features, use the `SecureFormCraftComponent`:
+Render the form with the standard `FormCraftComponent` — CSRF validation, rate
+limiting, and audit logging are enforced automatically. Your submit handler only
+needs to handle persistence, encrypting marked fields in one call:
 
 ```razor
-<SecureFormCraftComponent TModel="SecureFormModel" 
-                         Model="@model" 
-                         Configuration="@config"
-                         OnValidSubmit="@HandleSecureSubmit"
-                         ShowSubmitButton="true" />
+<FormCraftComponent TModel="SecureFormModel" 
+                    Model="@model" 
+                    Configuration="@config"
+                    SecurityContextId="@userId"
+                    OnValidSubmit="@HandleSecureSubmit"
+                    ShowSubmitButton="true" />
 
 @code {
+    [Inject] private IEncryptionService EncryptionService { get; set; } = default!;
+
     private async Task HandleSecureSubmit(SecureFormModel model)
     {
-        // Model will have decrypted values here
+        // Rate limiting and CSRF have already been enforced by the component;
+        // a FormSubmitted audit entry has been written (with redacted fields).
+
+        // Encrypt the fields marked with EncryptField() before persisting.
+        // The model itself is never modified.
+        var encrypted = EncryptionService.EncryptConfiguredFields(model, config.Security);
+        var ssnToStore = encrypted["SSN"];
+        var cardToStore = encrypted["CreditCard"];
+
         // Process the submission
     }
 }
 ```
+
+If you hold a reference to the component (`@ref`), the equivalent
+`component.GetEncryptedFieldValues()` convenience method uses the registered
+`IEncryptionService` and the form's own configuration.
 
 ## Best Practices
 

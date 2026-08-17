@@ -63,7 +63,11 @@ public class CustomValidatorTests
         // Arrange
         Func<string, bool> validationFunction = value =>
         {
-            if (string.IsNullOrEmpty(value)) return false;
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
             return value.Length >= 3 && value.Length <= 20 && value.All(char.IsLetterOrDigit);
         };
 
@@ -162,9 +166,10 @@ public class CustomValidatorTests
         // Act
         var result = await validator.ValidateAsync(model, "test", _services);
 
-        // Assert
+        // Assert - validator crashes must surface the cause, not the configured
+        // message (which would blame the user's input for a broken validator)
         result.IsValid.ShouldBeFalse();
-        result.ErrorMessage.ShouldBe("Validation error");
+        result.ErrorMessage.ShouldBe("Validation could not be completed: Test exception");
     }
 
     [Fact]
@@ -173,7 +178,10 @@ public class CustomValidatorTests
         // Arrange
         Func<string, bool> emailValidation = value =>
         {
-            if (string.IsNullOrWhiteSpace(value)) return false;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
 
             try
             {

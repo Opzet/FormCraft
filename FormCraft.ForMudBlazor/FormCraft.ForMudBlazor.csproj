@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);NU5104;NU1507</NoWarn>
-    
+
     <!-- Package Information -->
     <PackageId>FormCraft.ForMudBlazor</PackageId>
     <Title>FormCraft for MudBlazor</Title>
@@ -41,6 +40,15 @@
 
   <ItemGroup>
     <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Test-only. The diagnostics are internal by design (they are implementation detail, not package
+      API), but their rules are pure functions whose edge cases are worth pinning directly rather
+      than only through a rendered component — see MaskedValueDiagnostic.Applies (#266).
+    -->
+    <InternalsVisibleTo Include="FormCraft.ForMudBlazor.UnitTests"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,8 @@ using MudBlazor;
 
 namespace FormCraft.DemoBlazorApp.Components.Pages;
 
-public partial class FormSlots : IDisposable
+// IDisposable comes from DemoComponentBase (via @inherits in the .razor), so it is not restated here.
+public partial class FormSlots
 {
     private ContactModel _model = new();
     private IFormConfiguration<ContactModel> _formConfiguration = null!;
@@ -16,6 +17,8 @@ public partial class FormSlots : IDisposable
     private bool _showCountdown = true;
     private string _countdownText = "";
     private System.Timers.Timer? _countdownTimer;
+    // Fictional event always set in the future so the demo content never goes stale
+    private readonly int _eventYear = DateTime.Now.Month >= 7 ? DateTime.Now.Year + 1 : DateTime.Now.Year;
 
     /// <summary>
     /// Structured documentation for this demo page.
@@ -58,7 +61,7 @@ public partial class FormSlots : IDisposable
             "BeforeForm and AfterForm are optional - only use them when they add value to the user experience",
             "Avoid placing form fields directly in slots - they won't be part of the form configuration"
         ],
-        RelatedDemoIds = ["fluent", "field-groups", "improved", "custom-layout"]
+        RelatedDemoIds = ["fluent", "field-groups", "improved"]
     };
 
     // Legacy properties for backward compatibility with existing razor template
@@ -132,7 +135,9 @@ public partial class FormSlots : IDisposable
 
     private void UpdateCountdown(object? sender, ElapsedEventArgs? e)
     {
-        var endDate = new DateTime(2024, 7, 1);
+        // Early-bird pricing always ends July 1st of the event year so the
+        // demo content never goes stale
+        var endDate = new DateTime(_eventYear, 7, 1);
         var timeRemaining = endDate - DateTime.Now;
 
         if (timeRemaining.TotalSeconds > 0)
@@ -145,7 +150,13 @@ public partial class FormSlots : IDisposable
             _countdownTimer?.Stop();
         }
 
-        InvokeAsync(StateHasChanged);
+        // Stopping the timer in Dispose does not unqueue a tick that has already fired, so this
+        // callback can arrive after teardown and render a disposed component — the same defect as the
+        // delayed re-renders, reached through a timer instead of an await.
+        if (!IsDisposed)
+        {
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task HandleValidSubmit()
@@ -155,7 +166,10 @@ public partial class FormSlots : IDisposable
         StateHasChanged();
 
         // Simulate API call
-        await Task.Delay(1500);
+        if (!await DelayAsync(1500))
+        {
+            return;
+        }
 
         _activeStep = 2;
         _isSubmitted = true;
@@ -261,9 +275,12 @@ public partial class FormSlots : IDisposable
             """;
     }
 
-    public void Dispose()
+    // Overrides DemoComponentBase.Dispose rather than implementing IDisposable separately: the base
+    // owns the delay token, this component owns the timer, and both must be torn down.
+    public override void Dispose()
     {
         _countdownTimer?.Stop();
         _countdownTimer?.Dispose();
+        base.Dispose();
     }
 }

@@ -102,8 +102,12 @@ public partial class SimplifiedForm
         _isSubmitting = true;
         StateHasChanged();
 
-        // Simulate API call
-        await Task.Delay(2000);
+        // Simulate API call. DelayAsync reports false if the visitor navigated away while we waited —
+        // there is then no component left to re-render.
+        if (!await DelayAsync(2000))
+        {
+            return;
+        }
 
         _isSubmitted = true;
         _isSubmitting = false;
@@ -125,6 +129,15 @@ public partial class SimplifiedForm
         StateHasChanged();
     }
 
+    private static readonly Dictionary<string, string> CountryLabels = new()
+    {
+        ["US"] = "United States",
+        ["CA"] = "Canada",
+        ["UK"] = "United Kingdom",
+        ["DE"] = "Germany",
+        ["FR"] = "France",
+    };
+
     private List<FormSuccessDisplay.DataDisplayItem> GetDataDisplayItems()
     {
         var items = new List<FormSuccessDisplay.DataDisplayItem>
@@ -132,16 +145,20 @@ public partial class SimplifiedForm
             new() { Label = "Full Name", Value = $"{_model.FirstName} {_model.LastName}" },
             new() { Label = "Email", Value = _model.Email },
             new() { Label = "Age", Value = _model.Age.ToString() },
-            new() { Label = "Country", Value = _model.Country }
+            new() { Label = "Country", Value = CountryLabels.GetValueOrDefault(_model.Country ?? "", _model.Country ?? "") }
         };
 
         if (!string.IsNullOrEmpty(_model.City))
+        {
             items.Add(new() { Label = "City", Value = _model.City });
+        }
 
         items.Add(new() { Label = "Newsletter", Value = _model.SubscribeToNewsletter ? "Yes" : "No" });
 
         if (_fieldChanges.Any())
+        {
             items.Add(new() { Label = "Field Changes", Value = $"{_fieldChanges.Count} changes tracked" });
+        }
 
         return items;
     }

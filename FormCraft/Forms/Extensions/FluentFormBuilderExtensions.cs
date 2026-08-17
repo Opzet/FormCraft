@@ -39,13 +39,16 @@ public static class FluentFormBuilderExtensions
                     .Required($"{label} is required");
 
                 if (minLength > 1)
+                {
                     field.WithMinLength(minLength, $"Must be at least {minLength} characters");
+                }
 
-                if (maxLength < 255)
-                    field.WithMaxLength(maxLength, $"Must be no more than {maxLength} characters");
+                field.WithMaxLength(maxLength, $"Must be no more than {maxLength} characters");
 
                 if (!string.IsNullOrEmpty(placeholder))
+                {
                     field.WithPlaceholder(placeholder);
+                }
             });
         }
 
@@ -103,10 +106,16 @@ public static class FluentFormBuilderExtensions
                 field.WithLabel(label);
 
                 if (required)
+                {
                     field.Required($"{label} is required");
+                }
 
-                if (min != int.MinValue || max != int.MaxValue)
-                    field.WithRange(min, max, $"Must be between {min} and {max}");
+                var hasMin = min != int.MinValue;
+                var hasMax = max != int.MaxValue;
+                if (hasMin || hasMax)
+                {
+                    field.WithRange(min, max, BuildRangeMessage(hasMin, hasMax, min, max));
+                }
             });
         }
 
@@ -137,13 +146,21 @@ public static class FluentFormBuilderExtensions
                 field.WithLabel(label);
 
                 if (required)
+                {
                     field.Required($"{label} is required");
+                }
 
-                if (min != decimal.MinValue || max != decimal.MaxValue)
-                    field.WithRange(min, max, $"Must be between {min} and {max}");
+                var hasMin = min != decimal.MinValue;
+                var hasMax = max != decimal.MaxValue;
+                if (hasMin || hasMax)
+                {
+                    field.WithRange(min, max, BuildRangeMessage(hasMin, hasMax, min, max));
+                }
 
                 if (!string.IsNullOrEmpty(placeholder))
+                {
                     field.WithPlaceholder(placeholder);
+                }
             });
         }
 
@@ -172,7 +189,9 @@ public static class FluentFormBuilderExtensions
                     .WithHelpText($"Enter amount in {currencySymbol}");
 
                 if (required)
+                {
                     field.Required($"{label} is required");
+                }
 
                 // Ensure non-negative values for currency
                 field.WithRange(0, decimal.MaxValue, "Amount must be positive");
@@ -203,7 +222,9 @@ public static class FluentFormBuilderExtensions
                     .WithRange(0, 100, "Percentage must be between 0 and 100");
 
                 if (required)
+                {
                     field.Required($"{label} is required");
+                }
             });
         }
 
@@ -258,7 +279,9 @@ public static class FluentFormBuilderExtensions
                         "Please enter a valid phone number");
 
                 if (required)
+                {
                     field.Required($"{label} is required");
+                }
             });
         }
 
@@ -283,6 +306,7 @@ public static class FluentFormBuilderExtensions
             return builder.AddField(expression, field =>
             {
                 field.WithLabel(label)
+                    .WithInputType("password")
                     .Required($"{label} is required")
                     .WithMinLength(minLength, $"Must be at least {minLength} characters");
 
@@ -317,17 +341,30 @@ public static class FluentFormBuilderExtensions
                 field.WithLabel(label);
 
                 if (!string.IsNullOrEmpty(helpText))
+                {
                     field.WithHelpText(helpText);
+                }
             });
         }
     }
-    
+
     #region Helper Methods
+
+    private static string BuildRangeMessage<TValue>(bool hasMin, bool hasMax, TValue min, TValue max)
+    {
+        return hasMin && hasMax
+            ? $"Must be between {min} and {max}"
+            : hasMin
+                ? $"Must be at least {min}"
+                : $"Must be at most {max}";
+    }
 
     private static bool IsValidPhone(string phone)
     {
         if (string.IsNullOrWhiteSpace(phone))
+        {
             return false;
+        }
 
         // Remove common phone formatting
         var cleanPhone = phone.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "").Replace(".", "");
@@ -373,7 +410,9 @@ public static class FluentFormBuilderExtensions
                  .AsFileUpload(acceptedFileTypes, maxFileSize);
 
             if (required)
+            {
                 field.Required($"{label} is required");
+            }
         });
     }
 
@@ -412,7 +451,9 @@ public static class FluentFormBuilderExtensions
                  .AsMultipleFileUpload(maxFiles, acceptedFileTypes, maxFileSize);
 
             if (required)
+            {
                 field.Required($"At least one {label.ToLower()} is required");
+            }
         });
     }
 

@@ -1,0 +1,33 @@
+@namespace FormCraft.ForMudBlazor
+@typeparam TModel
+@typeparam TValue where TValue : struct
+@inherits MudBlazorFieldComponentBase<TModel, TValue?>
+@implements INumericFieldComponent<TModel, TValue>
+
+@* `Format` and `HideSpinButtons` are bound below for #208 — see the sibling non-nullable component
+   for the rationale, including why FormCraft's ShowSpinButtons is inverted into MudBlazor's
+   HideSpinButtons, and why this comment sits outside the tag (MUD0002). *@
+<MudNumericField
+    T="TValue?"
+    Label="@Label"
+    @bind-Value="@_localValue"
+    @bind-Value:after="OnLocalValueChanged"
+    Placeholder="@Placeholder"
+    HelperText="@HelpText"
+    ReadOnly="@IsReadOnly"
+    Disabled="@IsDisabled"
+    Min="@(Min ?? GetTypeMinValue())"
+    Max="@(Max ?? GetTypeMaxValue())"
+    Step="@(Step ?? GetDefaultStep())"
+    Culture="@Culture"
+    Format="@Format"
+    HideSpinButtons="@(!ShowSpinButtons)"
+    Adornment="@EffectiveAdornment"
+    AdornmentIcon="@EffectiveAdornmentIcon"
+    AdornmentColor="@EffectiveAdornmentColor"
+    OnAdornmentClick="@AdornmentClick"
+    Variant="@EffectiveVariant"
+    Margin="Margin.Dense"
+    ShrinkLabel="@EffectiveShrinkLabel"
+    Required="@EffectiveNativeRequired"
+    Immediate="true" />

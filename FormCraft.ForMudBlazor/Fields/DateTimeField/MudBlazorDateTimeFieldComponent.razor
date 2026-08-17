@@ -1,6 +1,6 @@
 @namespace FormCraft.ForMudBlazor
 @typeparam TModel
-@inherits FieldComponentBase<TModel, DateTime>
+@inherits MudBlazorFieldComponentBase<TModel, DateTime>
 @implements IDateTimeFieldComponent<TModel>
 
 <MudDatePicker
@@ -11,9 +11,13 @@
     HelperText="@HelpText"
     ReadOnly="@IsReadOnly"
     Disabled="@IsDisabled"
-    Variant="Variant.Outlined"
+    Adornment="@DateAdornment"
+    AdornmentIcon="@DateAdornmentIcon"
+    AdornmentColor="@EffectiveAdornmentColor"
+    Variant="@EffectiveVariant"
     Margin="Margin.Dense"
-    ShrinkLabel="true"
+    ShrinkLabel="@EffectiveShrinkLabel"
+    Required="@EffectiveNativeRequired"
     DateFormat="@Format"
     Editable="true"
     MinDate="@MinDate"

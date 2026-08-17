@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.9.12105.275 stable
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.DemoBlazorApp", "FormCraft.DemoBlazorApp\FormCraft.DemoBlazorApp.csproj", "{0E605901-5186-4D76-AC90-EC845675DB9C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft", "FormCraft\FormCraft.csproj", "{F6DD27E9-766F-4426-82C7-03E6CF7AE348}"
@@ -22,43 +25,59 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "_build", "build\_build.cspr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{B8C2E5F1-4A8D-4F8E-9B1A-8F5C3D7E2F9A}"
 	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
+		BUILD_RELEASE_SETUP.md = BUILD_RELEASE_SETUP.md
 		CHANGELOG.md = CHANGELOG.md
 		CONTRIBUTING.md = CONTRIBUTING.md
-		LICENSE = LICENSE
 		GITHUB_PAGES_DEPLOYMENT.md = GITHUB_PAGES_DEPLOYMENT.md
-		BUILD_RELEASE_SETUP.md = BUILD_RELEASE_SETUP.md
+		LICENSE = LICENSE
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build-config", "build-config", "{C9F1E2D3-5A7B-4C8E-9F1A-2B3C4D5E6F7A}"
 	ProjectSection(SolutionItems) = preProject
+		.release-please-manifest.json = .release-please-manifest.json
+		GitVersion.yml = GitVersion.yml
 		global.json = global.json
 		NuGet.config = NuGet.config
-		GitVersion.yml = GitVersion.yml
-		cliff.toml = cliff.toml
+		release-please-config.json = release-please-config.json
 		renovate.json = renovate.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{D1A2B3C4-6E5F-4D7E-8B9A-0C1D2E3F4A5B}"
 	ProjectSection(SolutionItems) = preProject
-		build.sh = build.sh
-		build.ps1 = build.ps1
 		build.cmd = build.cmd
-		pack-local.sh = pack-local.sh
+		build.ps1 = build.ps1
+		build.sh = build.sh
 		pack-local.ps1 = pack-local.ps1
-		setup-hooks.sh = setup-hooks.sh
-		setup-hooks.ps1 = setup-hooks.ps1
+		pack-local.sh = pack-local.sh
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{E1F2A3B4-7C8D-4E9F-A0B1-2C3D4E5F6A7B}"
 	ProjectSection(SolutionItems) = preProject
+		.github\workflows\ci.yml = .github\workflows\ci.yml
 		.github\workflows\continuous.yml = .github\workflows\continuous.yml
 		.github\workflows\deploy-docs.yml = .github\workflows\deploy-docs.yml
+		.github\workflows\pr-title-lint.yml = .github\workflows\pr-title-lint.yml
+		.github\workflows\release-please.yml = .github\workflows\release-please.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.ForMudBlazor", "FormCraft.ForMudBlazor\FormCraft.ForMudBlazor.csproj", "{DE15024B-BF9D-4D15-A205-AACF6A8EE670}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.ForMudBlazor.UnitTests", "FormCraft.ForMudBlazor.UnitTests\FormCraft.ForMudBlazor.UnitTests.csproj", "{A8C1E488-E415-4F66-BF4C-30590300440C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{3A8DF596-E814-FECC-DD4B-D8EF8AAC1A0D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.ForFluentUI", "FormCraft.ForFluentUI\FormCraft.ForFluentUI.csproj", "{48C2ECB7-23CE-4AAD-855F-31E191A38C74}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.ForFluentUI.UnitTests", "FormCraft.ForFluentUI.UnitTests\FormCraft.ForFluentUI.UnitTests.csproj", "{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.DemoFluentApp", "FormCraft.DemoFluentApp\FormCraft.DemoFluentApp.csproj", "{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.VisualDesigner", "FormCraft.VisualDesigner\FormCraft.VisualDesigner\FormCraft.VisualDesigner.csproj", "{61BA3A1A-9A9C-484D-B115-399F6F835F64}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormCraft.VisualDesigner.Client", "FormCraft.VisualDesigner\FormCraft.VisualDesigner.Client\FormCraft.VisualDesigner.Client.csproj", "{D297F3E2-73AE-4F44-E341-3F39D8C4C950}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -140,6 +159,66 @@ Global
 		{A8C1E488-E415-4F66-BF4C-30590300440C}.Release|x64.Build.0 = Release|Any CPU
 		{A8C1E488-E415-4F66-BF4C-30590300440C}.Release|x86.ActiveCfg = Release|Any CPU
 		{A8C1E488-E415-4F66-BF4C-30590300440C}.Release|x86.Build.0 = Release|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Debug|x64.Build.0 = Debug|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Debug|x86.Build.0 = Debug|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Release|x64.ActiveCfg = Release|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Release|x64.Build.0 = Release|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Release|x86.ActiveCfg = Release|Any CPU
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74}.Release|x86.Build.0 = Release|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Debug|x64.Build.0 = Debug|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Debug|x86.Build.0 = Debug|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Release|x64.ActiveCfg = Release|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Release|x64.Build.0 = Release|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Release|x86.ActiveCfg = Release|Any CPU
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA}.Release|x86.Build.0 = Release|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Debug|x64.Build.0 = Debug|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Debug|x86.Build.0 = Debug|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Release|x64.ActiveCfg = Release|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Release|x64.Build.0 = Release|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Release|x86.ActiveCfg = Release|Any CPU
+		{B3D92252-4AD1-49C2-B150-B74EE7B5FD6D}.Release|x86.Build.0 = Release|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Debug|x64.Build.0 = Debug|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Debug|x86.Build.0 = Debug|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Release|x64.ActiveCfg = Release|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Release|x64.Build.0 = Release|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Release|x86.ActiveCfg = Release|Any CPU
+		{61BA3A1A-9A9C-484D-B115-399F6F835F64}.Release|x86.Build.0 = Release|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Debug|x64.Build.0 = Debug|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Debug|x86.Build.0 = Debug|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Release|x64.ActiveCfg = Release|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Release|x64.Build.0 = Release|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Release|x86.ActiveCfg = Release|Any CPU
+		{D297F3E2-73AE-4F44-E341-3F39D8C4C950}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -153,5 +232,10 @@ Global
 		{6ED59F2D-69C9-4F71-A95F-6115C1775B36} = {A1B2C3D4-5E6F-7890-1234-567890ABCDEF}
 		{DE15024B-BF9D-4D15-A205-AACF6A8EE670} = {7A77639B-9BA4-4910-8A56-88E2F0E80F3A}
 		{A8C1E488-E415-4F66-BF4C-30590300440C} = {6ED59F2D-69C9-4F71-A95F-6115C1775B36}
+		{48C2ECB7-23CE-4AAD-855F-31E191A38C74} = {3A8DF596-E814-FECC-DD4B-D8EF8AAC1A0D}
+		{C46DBEAF-0B78-42CE-8086-1C76C2ABE0BA} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5A068D16-4A83-4600-994B-1DA26045D49C}
 	EndGlobalSection
 EndGlobal

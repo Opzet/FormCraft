@@ -1,50 +1,74 @@
 name: continuous
 
+# Build, test and pack on every push and pull request. This workflow does NOT publish anything:
+# releasing — version, changelog, tag, GitHub Release and both NuGet packages — is owned end to end
+# by .github/workflows/release-please.yml, which runs the publish in the same job that creates the
+# tag. It has to be that way: release-please creates the tag with GITHUB_TOKEN, and GitHub does not
+# fire `on: push: tags` for events created by that token, so a tag-triggered publish here would
+# simply never run again.
+
 on:
   push:
     branches:
       - main
-      - develop
-    tags:
-      - 'v*'
+      - dev
   pull_request:
     branches:
       - main
-      - develop
+      - dev
 
+# This job writes nothing to the repository or to any package registry — it only uploads workflow
+# artifacts, which needs no repository scope.
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
   ubuntu-latest:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: 'Setup: .NET SDK'
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
       - name: 'Cache: .nuke/temp, ~/.nuget/packages'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             .nuke/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('global.json', '**/*.csproj') }}
-      - name: 'Run: Continuous'
-        run: ./build.cmd Continuous
+      # `Pack`, not `Continuous`. Both run Test then Pack, but `Continuous` additionally
+      # `.Triggers(PublishIfNeeded)`, whose only guard is OnlyWhenStatic(IsOnVersionTag() &&
+      # IsServerBuild) — it does NOT check whether a key exists. That guard is satisfied whenever the
+      # checked-out commit happens to carry a v* tag, which is not hypothetical here: `origin/main`
+      # IS the v3.1.0 commit, and after each release the tagged commit sits on `dev` too. This
+      # workflow mints no key, so reaching Publish would hard-fail on its Requires(NuGetApiKey) and
+      # redden a default branch. Invoking `Pack` removes the publish path from this workflow
+      # entirely rather than relying on it never being reached.
+      #
+      # Publishing lives solely in release-please.yml's `nupkg` job, which checks out the tag on
+      # purpose and mints a short-lived key alongside it.
+      - name: 'Run: Pack'
+        run: ./build.cmd Pack
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # See ci.yml's copy of this step for the full rationale (#225, #231). Two things matter here:
+      # `if: always()` — without it a failed `Run: Pack` skips this step and the only record of which
+      # tests failed dies with the runner — and `test-results`, which since #231 is a directory the
+      # build genuinely fills. It did not used to be: MTP ignored the VSTest results-directory/logger
+      # properties Build.cs set (warning MTP0001), which is why this step, the oldest of the three,
+      # had never once produced a non-empty artifact.
       - name: 'Publish: test-results'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: test-results
+          if-no-files-found: ignore
       - name: 'Publish: artifacts'
         uses: actions/upload-artifact@v7
         with:
