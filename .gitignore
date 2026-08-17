@@ -11,3 +11,9 @@ riderModule.iml
 # Build artifacts
 /artifacts/
 /test-results/
+
+# Agent worktrees
+.claude/worktrees/
+/.vs/CopilotSnapshots/D340690A441AE848A756E4CBDF2182E0/0A6518171A021449926708E36EF14E73
+/.vs/CopilotSnapshots/D340690A441AE848A756E4CBDF2182E0
+/.vs/FormCraft/copilot-chat/2cf5cff1/sessions
